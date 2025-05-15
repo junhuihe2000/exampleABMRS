@@ -24,6 +24,9 @@ library(splines)
 triceps = read.csv('../datasets/triceps/triceps.csv')
 # plot
 p_data = ggplot(triceps, aes(age, lntriceps)) + geom_point(shape = 1) + ylim(1.0, 4.0) + xlab('Age in years') + ylab('Triceps skinfold thickness in mm (log)')
+pdf(file=file.path("figures","triceps_truth.pdf"),width=8,height=6)
+p_data
+dev.off()
 ```
 
 ```{r knot-inference}
@@ -44,6 +47,46 @@ pdf(file=file.path("figures","knot_inference_triceps.pdf"),width=8,height=2)
 ggarrange(p_1,p_2,ncol=2,align="hv")
 dev.off()
 ```
+
+```{r DIC}
+m = nrow(triceps)
+
+compute_deviance <- function(node) {
+  B = bs(x = triceps$age, knots = node, degree = 1, intercept = TRUE)
+  fitted_lm = glm(triceps$lntriceps~B-1)
+  return(m*log(mean(fitted_lm$residuals^2)) + ncol(B)*log(m) + m*log(2*pi) + m)
+}
+
+set.seed(1234)
+mean_devs = rep(NA, 6)
+dev_means = rep(NA, 6)
+for(k in 1:6) {
+  ebars_model = ebars(triceps$age, triceps$lntriceps, degree = 1, k = k, n = 1000)
+  ebars_model$mcmc(burns=8000, steps=1000)
+  nodes_mat = sapply(ebars_model$samples(), function(xi) {return(xi)})
+  if(k==1) {nodes_mat = rbind(nodes_mat)}
+  mean_devs[k] = mean(apply(nodes_mat, 2, compute_deviance))
+  # deviance of posterior mean
+  node_mean = rowMeans(nodes_mat)
+  dev_means[k] = compute_deviance(node_mean)
+}
+# compute deviance information criterion
+dics = 2*mean_devs - dev_means
+```
+
+```{r}
+plot(dics)
+```
+
+```{r}
+plot(dev_means)
+```
+
+```{r}
+plot(mean_devs)
+```
+
+
 
 ```{r regression}
 set.seed(1234)

@@ -17,6 +17,8 @@ library(ggplot2)
 library(ggpubr)
 library(grid)
 source("Linear_Spline_Estimation.R")
+
+getwd()
 ```
 
 ```{r}
@@ -43,18 +45,11 @@ f3 = function(x) {
   y = B%*%beta
   return(y)
 }
+
+noises = c(0.4,0.3,0.4)
+xis = list(c(0.5),c(0.3,0.7),c(0.2,0.2,0.5,0.7))
 ```
 
-```{r}
-n_exp = 50 # experiment number
-noises = c(0.4,0.3,0.4)
-fs = list(f1,f2,f3); ks = c(1,2,4)
-xis = list(c(0.5),c(0.3,0.7),c(0.2,0.2,0.5,0.7))
-idxs = list(c(1),c(2:3),c(4:7))
-error_array = array(dim=c(3,7,n_exp))
-dim_names = list(c("EBARS","LSE","Segmented"),c("Case 1 Knot 1","Case 2 Knot 1","Case 2 Knot 2","Case 3 Knot 1","Case 3 Knot 2","Case 3 Knot 3","Case 3 Knot 4"))
-dimnames(error_array) = dim_names
-```
 
 + Plot
 
@@ -131,37 +126,121 @@ dev.off()
 
 + Knot Inference
 
-```{r}
+```{r, include=FALSE}
 set.seed(1234)
-# case 1
-m_1 = 500; sd_1 = noises[1]
-x_1 = runif(m_1)
-y_1 = f1(x_1) + rnorm(m_1,0,sd_1)
-# EBARS
-ebars_1 = ebars(x_1,y_1,k=1,n=1000,degree=1,intercept=TRUE)
-ebars_1$mcmc(burns=5000,steps=5000)
-nodes_1 = sapply(ebars_1$samples(), function(xi) {return(xi)})
+m_train = 500
+burns = 2500; post_burns = 2500
+n_exps = 100
+knot_quantiles = array(NA, dim = c(6,7,n_exps))
+dimnames(knot_quantiles)[[1]] = c("2.5%", "12.5%", "25%", "75%", "87.5%", "97.5%")
+dimnames(knot_quantiles)[[2]] = c("Case 1 Knot 1","Case 2 Knot 1","Case 2 Knot 2","Case 3 Knot 1","Case 3 Knot 2","Case 3 Knot 3","Case 3 Knot 4")
+knot_quantiles_calib = array(NA, dim = c(6,n_exps))
+rownames(knot_quantiles_calib) = c("2.5%", "12.5%", "25%", "75%", "87.5%", "97.5%")
+for(k in 1:n_exps) {
+  print(paste0("The ",k,"-th experiment"))
+  # case 1
+  sd_1 = noises[1]
+  x_1 = runif(m_train)
+  y_1 = f1(x_1) + rnorm(m_train,0,sd_1)
+  # EBARS
+  ebars_1 = ebars(x_1,y_1,k=1,n=1000,degree=1,intercept=TRUE)
+  ebars_1$mcmc(burns=burns,steps=post_burns)
+  nodes_1 = sapply(ebars_1$samples(), function(xi) {return(xi)})
+  knot_quantiles[,1,k] = quantile(nodes_1, probs = c(0.025, 0.125, 0.25, 0.75, 0.875, 0.975))
+  
+  # case 2
+  sd_2 = noises[2]
+  x_2 = runif(m_train)
+  y_2 = f2(x_2) + rnorm(m_train,0,sd_2)
+  # EBARS
+  ebars_2 = ebars(x_2,y_2,k=2,n=1000,degree=1,intercept=TRUE)
+  ebars_2$mcmc(burns=burns,steps=post_burns)
+  nodes_2 = sapply(ebars_2$samples(), function(xi) {return(xi)})
+  knot_quantiles[,2:3,k] = apply(nodes_2, 1, function(xi) quantile(xi, probs = c(0.025, 0.125, 0.25, 0.75, 0.875, 0.975)))
+  
+  # case 3
+  sd_3 = noises[3]
+  x_3 = runif(m_train)
+  y_3 = f3(x_3) + rnorm(m_train,0,sd_3)
+  # EBARS
+  ebars_3 = ebars(x_3,y_3,k=4,n=1000,degree=1,intercept=TRUE)
+  ebars_3$mcmc(burns=burns,steps=post_burns)
+  nodes_3 = sapply(ebars_3$samples(), function(xi) {return(xi)})
+  knot_quantiles[,4:7,k] = apply(nodes_3, 1, function(xi) quantile(xi, probs = c(0.025, 0.125, 0.25, 0.75, 0.875, 0.975)))
+  knot_quantiles_calib[,k] = quantile(c(nodes_3[1:2,]), probs = c(0.025, 0.125, 0.25, 0.75, 0.875, 0.975))
+}
 
-# case 2
-m_2 = 500; sd_2 = noises[2]
-x_2 = runif(m_2)
-y_2 = f2(x_2) + rnorm(m_2,0,sd_2)
-# EBARS
-ebars_2 = ebars(x_2,y_2,k=2,n=1000,degree=1,intercept=TRUE)
-ebars_2$mcmc(burns=5000,steps=5000)
-nodes_2 = sapply(ebars_2$samples(), function(xi) {return(xi)})
-
-# case 3
-m_3 = 500; sd_3 = noises[3]
-x_3 = runif(m_3)
-y_3 = f3(x_3) + rnorm(m_3,0,sd_3)
-# EBARS
-ebars_3 = ebars(x_3,y_3,k=4,n=1000,degree=1,intercept=TRUE)
-ebars_3$mcmc(burns=5000,steps=5000)
-nodes_3 = sapply(ebars_3$samples(), function(xi) {return(xi)})
+save(knot_quantiles, knot_quantiles_calib, file = paste0("quantiles_", m_train, ".RData"))
 ```
 
+```{r}
+coverage_count = array(NA, c(n_exps, 3, 7))
+xi_vec = unlist(xis)
+xi_mat = rbind(xi_vec, xi_vec, xi_vec)
+for(i in 1:n_exps) {
+  coverage_count[i,,] = (xi_mat>knot_quantiles[1:3,,i])&(xi_mat<knot_quantiles[6:4,,i])
+}
+coverage_calib = (coverage_count[,,4] | coverage_count[,,5])
+apply(coverage_count, c(2,3), mean)
+colMeans(coverage_calib)
+overlap = knot_quantiles[1:3,5,] < knot_quantiles[6:4,4,]
+rowMeans(overlap)
+```
+
+
 + Run Simulations
+
+```{r}
+n_exp = 50 # experiment number
+noises = c(0.4,0.3,0.4)
+fs = list(f1,f2,f3); ks = c(1,2,4)
+xis = list(c(0.5),c(0.3,0.7),c(0.2,0.2,0.5,0.7))
+idxs = list(c(1),c(2:3),c(4:7))
+error_array = array(dim=c(3,7,n_exp))
+dim_names = list(c("EBARS","LSE","Segmented"),c("Case 1 Knot 1","Case 2 Knot 1","Case 2 Knot 2","Case 3 Knot 1","Case 3 Knot 2","Case 3 Knot 3","Case 3 Knot 4"))
+dimnames(error_array) = dim_names
+```
+
+```{r}
+set.seed(1234)
+m_train = 200
+knot_est_200 = array(NA, c(m_train, 6, n_exp))
+for(n in 1:n_exp) {
+  for(i in 1:3) {
+    # generate training data
+    k = ks[i]; f = fs[[i]]; noise = noises[[i]]
+    xi = xis[[i]]; idx = idxs[[i]]
+    x_train = runif(m_train)
+    y_train = f(x_train)
+    y_obs = y_train + rnorm(m_train,0,noise)
+    knot_est_200[,(2*i-1),n] = x_train
+    knot_est_200[,(2*i),n] = y_obs
+  }
+}
+```
+
+```{r}
+set.seed(1234)
+m_train = 500
+knot_est_500 = array(NA, c(m_train, 6, n_exp))
+for(n in 1:n_exp) {
+  for(i in 1:3) {
+    # generate training data
+    k = ks[i]; f = fs[[i]]; noise = noises[[i]]
+    xi = xis[[i]]; idx = idxs[[i]]
+    x_train = runif(m_train)
+    y_train = f(x_train)
+    y_obs = y_train + rnorm(m_train,0,noise)
+    knot_est_500[,(2*i-1),n] = x_train
+    knot_est_500[,(2*i),n] = y_obs
+  }
+}
+```
+
+```{r}
+save(knot_est_200, knot_est_500, file = "knot_est_data.RData")
+```
+
 
 ```{r, include=FALSE}
 time.start = Sys.time()
@@ -169,35 +248,43 @@ set.seed(1234)
 m_train = 500
 for(n in 1:n_exp) {
   for(i in 1:3) {
-  print(paste0("The ",n,"-th experiment\n"))
-  # generate training data
-  k = ks[i]; f = fs[[i]]; noise = noises[[i]]
-  xi = xis[[i]]; idx = idxs[[i]]
-  x_train = runif(m_train)
-  y_train = f(x_train)
-  y_obs = y_train + rnorm(m_train,0,noise)
+    print(paste0("The ",n,"-th experiment\n"))
+    # generate training data
+    k = ks[i]; f = fs[[i]]; noise = noises[[i]]
+    xi = xis[[i]]; idx = idxs[[i]]
+    x_train = runif(m_train)
+    y_train = f(x_train)
+    y_obs = y_train + rnorm(m_train,0,noise)
   
-  # EBARS
-  ebars_linear = ebars(x_train,y_obs,k=k,n=1000,degree=1,intercept=TRUE)
-  ebars_linear$mcmc(burns=5000,steps=5000)
-  if(k==1) {
-    xi_ebars = mean(sapply(ebars_linear$samples(), function(xi) {return(xi)}))
-  } else {
-    xi_ebars = rowMeans(sapply(ebars_linear$samples(), function(xi) {return(xi)}))
-  }
-  error_array[1,idx,n] = xi-xi_ebars
+    # EBARS
+    ebars_linear = ebars(x_train,y_obs,k=k,n=1000,degree=1,intercept=TRUE)
+    ebars_linear$mcmc(burns=5000,steps=5000)
+    if(k==1) {
+      xi_ebars = mean(sapply(ebars_linear$samples(), function(xi) {return(xi)}))
+    } else {
+      xi_ebars = rowMeans(sapply(ebars_linear$samples(), function(xi) {return(xi)}))
+    }
+    error_array[1,idx,n] = xi-xi_ebars
+    
+    # Linear Spline Estimation
+    if(k==4) {
+      init_lse = quantile(x_train, probs=seq(0,1,length.out=(5))[2:4])
+      xi_lse = sort(LSE(x_train,y_obs,init_lse))
+      xi_lse = c(xi_lse[1], xi_lse[1], xi_lse[2], xi_lse[3])
+    } else {
+      init_lse = quantile(x_train, probs=seq(0,1,length.out=(k+2))[2:(k+1)])
+      xi_lse = sort(LSE(x_train,y_obs,init_lse))
+    }
+    xi_lse = sapply(xi_lse, function(x) {max(min(x,1),0)})
+    error_array[2,idx,n] = xi-xi_lse
+    
+    # segmented method
+    init_seg = quantile(x_train, probs=seq(0,1,length.out=(k+2))[2:(k+1)])
+    fit.lm = lm(y_obs~x_train)
+    fit.seg = segmented(fit.lm,seg.Z=~x_train,npsi=k)
+    xi_seg = sort(fit.seg$psi[,2])
+    error_array[3,idx,n] = xi-xi_seg
   
-  # Linear Spline Estimation
-  init_lse = quantile(x_train, probs=seq(0,1,length.out=(k+2))[2:(k+1)])
-  xi_lse = sort(LSE(x_train,y_obs,init_lse))
-  error_array[2,idx,n] = xi-xi_lse
-  
-  # segmented method
-  init_seg = quantile(x_train, probs=seq(0,1,length.out=(k+2))[2:(k+1)])
-  fit.lm = lm(y_obs~x_train)
-  fit.seg = segmented(fit.lm,seg.Z=~x_train,npsi=k)
-  xi_seg = sort(fit.seg$psi[,2])
-  error_array[3,idx,n] = xi-xi_seg
   }
 }
 time.end = Sys.time()

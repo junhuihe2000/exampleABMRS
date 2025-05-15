@@ -1,0 +1,259 @@
+---
+title: "Detect activated voxel in a contrast map"
+author: "Junhui He"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, include = FALSE)
+```
+
+```{r}
+# load package
+library(oro.nifti)
+library(neurobase)
+library(EBARS)
+library(mgcv)
+
+# file path
+data_path = "G:/Phd/Data/HCPFMRI/WM_contrasts"
+
+set.seed(1234)
+
+# read data
+index_subjects = read.csv(file.path(data_path, "index2bk-0bk.csv"))
+subject_name = sample(index_subjects$subject, 1)
+
+# read nii
+contrast_map = readnii(file.path(data_path, "Contrasts", paste0(subject_name, "_2bk-0bk.nii")))
+mni152 = readnii(file.path(data_path, "templates/MNI152_T1_2mm.nii"))
+slice_idxs = ceiling(dim(mni152)/2)
+
+# compute the activation region
+activation_ebars = array(NA, dim = dim(mni152))
+activation_thres = array(NA, dim = dim(mni152))
+```
+
+
+```{r}
+# coronal, sagittal, axial
+ortho2(mni152, xyz = slice_idxs, crosshairs = FALSE)
+```
+
+
+## Sagittal
+
+```{r}
+set.seed(1234)
+# process slices
+idx_slice = slice_idxs[1]
+contrast_slice = contrast_map[idx_slice,,]
+
+slice_array_na = cbind(expand.grid(1:dim(contrast_slice)[1], 1:dim(contrast_slice)[2]), c(contrast_slice))
+slice_array = slice_array_na[!is.na(slice_array_na[,3]),]
+
+# normalize locations
+x = as.matrix(slice_array[,1:2])
+for (i in 1:2) {
+  x[,i] = (x[,i] - min(x[,i])) / (max(x[,i]) - min(x[,i]))
+}
+y = slice_array[,3]
+```
+
+
+Run ABMRS algorithm to detect activated voxel
+
+```{r}
+# apply EBARS
+model_bebars = binebars(x, y, k_1=10, k_2=10, n_1=1000, n_2=1000)
+
+time_start = Sys.time()
+model_bebars$mcmc(burns=1000, steps=1000)
+time_end = Sys.time()
+print(time_end - time_start)
+```
+
+
+```{r}
+getwd()
+load("data/knots_sag_act.RData")
+# fit a spline model
+knots_sag = model_bebars$knots()
+save(knots_sag, file = "knots_sag_act.RData")
+z = tensor_spline(x, xi_1=knots_sag$xi_1, xi_2=knots_sag$xi_2, intercept_1 = TRUE, intercept_2 = TRUE)
+reg_df = as.data.frame(z)
+reg_df$y = y
+lm_model = lm(y ~ . - 1, data=reg_df)
+
+# compute predictive intervals
+pred_int = as.data.frame(predict(lm_model, reg_df, interval="prediction", level=0.999))
+
+# calculate the activation region
+region_pred = (pred_int$lwr>0) | (pred_int$upr<0)
+region_act_sag = array(NA, dim = dim(mni152)[c(2,3)])
+for (i in 1:length(region_pred)) {
+  region_act_sag[slice_array[i,1], slice_array[i,2]] = region_pred[i]
+}
+
+activation_ebars[idx_slice,,] = region_act_sag
+region_thres_sag = abs(contrast_slice) > quantile(abs(y), 1 - sum(region_pred)/length(y))
+activation_thres[idx_slice,,] = region_thres_sag
+```
+
+
+## Coronal
+
+```{r}
+set.seed(1234)
+# process slices
+idx_slice = slice_idxs[2]
+contrast_slice = contrast_map[,idx_slice,]
+
+slice_array_na = cbind(expand.grid(1:dim(contrast_slice)[1], 1:dim(contrast_slice)[2]), c(contrast_slice))
+slice_array = slice_array_na[!is.na(slice_array_na[,3]),]
+
+# normalize locations
+x = as.matrix(slice_array[,1:2])
+for (i in 1:2) {
+  x[,i] = (x[,i] - min(x[,i])) / (max(x[,i]) - min(x[,i]))
+}
+y = slice_array[,3]
+```
+
+Run ABMRS algorithm to detect activated voxel
+
+```{r}
+# apply EBARS
+model_bebars = binebars(x, y, k_1=10, k_2=10, n_1=1000, n_2=1000)
+
+time_start = Sys.time()
+model_bebars$mcmc(burns=1000, steps=1000)
+time_end = Sys.time()
+print(time_end - time_start)
+```
+
+```{r}
+# fit a spline model
+knots_cor = model_bebars$knots()
+save(knots_cor, file = "knots_cor_act.RData")
+z = tensor_spline(x, xi_1=knots_cor$xi_1, xi_2=knots_cor$xi_2)
+reg_df = as.data.frame(z)
+reg_df$y = y
+lm_model = lm(y ~ ., data=reg_df)
+
+# compute predictive intervals
+pred_int = as.data.frame(predict(lm_model, reg_df, interval="prediction", level=0.999))
+
+# calculate the activation region
+region_pred = (pred_int$lwr>0) | (pred_int$upr<0)
+region_act_cor = array(NA, dim = dim(mni152)[c(1,3)])
+for (i in 1:length(region_pred)) {
+  region_act_cor[slice_array[i,1], slice_array[i,2]] = region_pred[i]
+}
+
+activation_ebars[,idx_slice,] = region_act_cor & (activation_ebars[,idx_slice,] | is.na(activation_ebars[,idx_slice,]))
+region_thres_cor = abs(contrast_slice) > quantile(abs(y), 1 - sum(region_pred)/length(y))
+activation_thres[,idx_slice,] = region_thres_cor & (activation_thres[,idx_slice,] | is.na(activation_thres[,idx_slice,]))
+```
+
+## Axial
+
+```{r}
+set.seed(1234)
+# process slices
+idx_slice = slice_idxs[3]
+contrast_slice = contrast_map[,,idx_slice]
+
+slice_array_na = cbind(expand.grid(1:dim(contrast_slice)[1], 1:dim(contrast_slice)[2]), c(contrast_slice))
+slice_array = slice_array_na[!is.na(slice_array_na[,3]),]
+
+# normalize locations
+x = as.matrix(slice_array[,1:2])
+for (i in 1:2) {
+  x[,i] = (x[,i] - min(x[,i])) / (max(x[,i]) - min(x[,i]))
+}
+y = slice_array[,3]
+```
+
+Run ABMRS algorithm to detect activated voxel
+
+```{r}
+# apply EBARS
+model_bebars = binebars(x, y, k_1=10, k_2=10, n_1=1000, n_2=1000)
+
+time_start = Sys.time()
+model_bebars$mcmc(burns=1000, steps=1000)
+time_end = Sys.time()
+print(time_end - time_start)
+```
+
+```{r}
+# fit a spline model
+knots_axi = model_bebars$knots()
+save(knots_axi, file = "knots_axi_act.RData")
+z = tensor_spline(x, xi_1=knots_axi$xi_1, xi_2=knots_axi$xi_2)
+reg_df = as.data.frame(z)
+reg_df$y = y
+lm_model = lm(y ~ ., data=reg_df)
+
+# compute predictive intervals
+pred_int = as.data.frame(predict(lm_model, reg_df, interval="prediction", level=0.999))
+
+# calculate the activation region
+region_pred = (pred_int$lwr>0) | (pred_int$upr<0)
+region_act_axi = array(NA, dim = dim(mni152)[c(1,2)])
+for (i in 1:length(region_pred)) {
+  region_act_axi[slice_array[i,1], slice_array[i,2]] = region_pred[i]
+}
+
+activation_ebars[,,idx_slice] = region_act_axi & (activation_ebars[,,idx_slice] | is.na(activation_ebars[,,idx_slice]))
+region_thres_axi = abs(contrast_slice) > quantile(abs(y), 1 - sum(region_pred)/length(y))
+activation_thres[,,idx_slice] = region_thres_axi & (activation_thres[,,idx_slice] | is.na(activation_thres[,,idx_slice]))
+```
+
+```{r}
+pdf("figures/act_spline.pdf", width = 5, height = 5)
+ortho2(mni152, activation_ebars, crosshairs = FALSE, col.y = "red")
+dev.off()
+```
+
+```{r}
+pdf("figures/act_thres.pdf", width = 5, height = 5)
+ortho2(mni152, activation_thres, crosshairs = FALSE, col.y = "red")
+dev.off()
+```
+
+```{r}
+activation_ebars = mni152@.Data
+activation_thres = mni152@.Data
+
+par(mfrow=c(3,2))
+region_act_sag[is.na(region_act_sag)] = FALSE
+activation_ebars[slice_idxs[1],,] = region_act_sag
+slice_overlay(mni152, y = activation_ebars, z = slice_idxs[1], plane = "sagittal", col.y = "red")
+
+region_act_cor[is.na(region_act_cor)] = FALSE
+activation_ebars[,slice_idxs[2],] = region_act_cor
+slice_overlay(mni152, y = activation_ebars, z = slice_idxs[2], plane = "coronal", col.y = "red")
+
+region_act_axi[is.na(region_act_axi)] = FALSE
+activation_ebars[,,slice_idxs[3]] = region_act_axi
+slice_overlay(mni152, y = activation_ebars, z = slice_idxs[3], plane = "axial", col.y = "red", bg = "transparent")
+```
+
+```{r}
+pdf("figures/example.pdf", width = 5, height = 5)
+slice(mni152, z = c(25, 35, 50, 65), plane = "axial")
+dev.off()
+```
+
+
+```{r}
+region_act[is.na(region_act)] = FALSE
+activation_ebars[,,idx_slice] = region_act
+activation_thres[,,idx_slice] = region_thres
+activation_ebars = mni152@.Data
+slice_overlay(mni152, y = activation_ebars, z = idx_slice, plane = "axial", col.y = "red")
+```
+

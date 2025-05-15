@@ -18,7 +18,7 @@ library(mgcv)
 
 ```{r}
 f1 = function(x) {
-  return(-40*(exp(-(x[,1]-0.2)^2/0.1-(x[,2]-0.3)^2/0.1)+exp(-(x[,1]-0.7)^2/0.1-(x[,2]-0.8)^2/0.1)))
+  return(-40*(exp(-(x[,1]-0.3)^2/0.1-(x[,2]-0.3)^2/0.1)-exp(-(x[,1]-0.7)^2/0.1-(x[,2]-0.7)^2/0.1)))
 }
 
 f2 = function(x) {
@@ -49,7 +49,7 @@ mse_array = array(dim=c(4,5,n_exp))
 dim_names = list(c("Case 1","Case 2","Case 3","Case 4"),c("EBARS 1","EBARS 2","EBARS 3","TPS", "TEP"))
 dimnames(mse_array) = dim_names
 fs = list(f1,f2,f3,f4)
-noises = c(1,1.5,2,2)
+noises = c(0.8,1.5,2,2)
 ```
 
 ```{r}
@@ -59,13 +59,14 @@ set.seed(1234)
 + Run Simulation
 
 ```{r, include=FALSE}
+set.seed(1234)
 time.start = Sys.time()
 # m_train = 500; m_test = 200
 m_train = 1000; m_test = 500
 
 for(k in c(1:n_exp)) {
 cat(paste0("The ",k,"-th experiment \n"))
-for(i in c(1:4)) {
+for(i in c(1)) {
 f = fs[[i]]; noise = noises[i]
 # generate train data
 x_train = cbind(c(0,runif(m_train-2,0,1),1),c(0,runif(m_train-2,0,1),1))
@@ -74,7 +75,7 @@ y_obs = y_train + rnorm(m_train,0,noise)
 x_new = cbind(runif(m_test,0,1),runif(m_test,0,1))
 y_new = f(x_new)
 
-if(FALSE) {
+if(TRUE) {
 # EBARS with gamma = 1
 binebars_1 = binebars(x_train, y_obs,gamma=1,times_1=3,times_2=3,intercept_1=T,intercept_2=T)
 binebars_1$mcmc(burns=500,steps=500)
