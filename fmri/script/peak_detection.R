@@ -33,7 +33,7 @@ y = contrast_map_array[idx, 4]
 
 ## --------------------------------------------------------------------------------------
 # apply EBARS
-model_ebars = triebars(x, y, k_1 = 10, k_2 = 10, k_3 = 10, n_1 = 1000, n_2 = 1000, n_3 = 1000, degree_1 = 1, degree_2 = 1, degree_3 = 1)
+model_ebars = triebars(x, y, n_1 = 1000, n_2 = 1000, n_3 = 1000, degree_1 = 1, degree_2 = 1, degree_3 = 1)
 time_start = Sys.time()
 model_ebars$mcmc(burns=500, steps=500)
 time_end = Sys.time()

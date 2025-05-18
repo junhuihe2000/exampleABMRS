@@ -11,11 +11,11 @@ data_path = "/home/hejunhui/R/ABMRS/fmri"
 
 set.seed(1234)
 
-aal_codes = c(6201, 2211, 6101, 6102, 2212, 2301, 2001, 2201, 6202, 2111)
+aal_codes = c(6201, 6101, 6102, 2001, 2201)
 
 load(file = file.path(data_path, "data/2bk-0bk_contrast.RData"))
 
-n_regions = 10
+n_regions = 5
 
 # test mse
 test_mse = array(NA, dim = c(3,n_regions))

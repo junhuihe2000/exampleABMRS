@@ -10,18 +10,16 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-# file path
-data_path = "G:/Phd/Data/HCPFMRI/WM_contrasts"
-# read data
-index_subjects = read.csv(file.path(data_path, "index2bk-0bk.csv"))
+library(EBARS)
 
-aal_regions = c("Par.Inf.L", "Fro.Mid.Ord.L", "Par.Sup.L", "Par.Sup.R", "Fro.Mid.Ord.R", "Fro.Inf.Ope.L", "Pre.L", "Fro.Mid.L", "Par.Inf.R", "Fro.Sup.Orb.L")
-aal_codes = c(6201, 2211, 6101, 6102, 2212, 2301, 2001, 2201, 6202, 2111)
+aal_regions = c("Par.Inf.L", "Par.Sup.L", "Par.Sup.R", "Pre.L", "Fro.Mid.L")
+aal_codes = c(6201, 6101, 6102,  2001, 2201)
 ```
 
+## Reconstruction
 
 ```{r}
-test_mses = array(NA, c(3, 10, 10))
+test_mses = array(NA, c(3, 5, 10))
 
 for (i in 1:dim(test_mses)[3]) {
   # subject_name = index_subjects$subject[i]
@@ -35,23 +33,18 @@ rownames(test_mse_ave) = c("ABMRS", "TPS", "TEP")
 print(test_mse_ave)
 ```
 
-```{r}
-idx = c(1, 3, 4, 7, 8)
-print(test_mse_ave[,idx])
-```
-
 
 ```{r}
-test_mse_sd = array(NA, c(3, 10))
+test_mse_sd = array(NA, c(3, 5))
 for (i in 1:3) {
-  for (j in 1:10) {
+  for (j in 1:ncol(test_mse_sd)) {
     test_mse_sd[i, j] = sd(test_mses[i, j, ])
   }
 }
 test_mse_sd = data.frame(round(test_mse_sd*100, digits = 3))
-# colnames(test_mse_sd) = c("slice_25", "slice_35", "slice_50", "slice_65")
+colnames(test_mse_sd) = aal_regions
 rownames(test_mse_sd) = c("ABMRS", "TPS", "TEP")
-print(test_mse_sd[,idx])
+print(test_mse_sd)
 ```
 
 ## Peak detection 
@@ -62,46 +55,88 @@ load(file = file.path("data/2bk-0bk_contrast.RData"))
 
 
 ```{r}
-code = aal_codes[idx[5]]
+code = aal_codes[5]
 load(file.path("output", paste0("region_", code, ".RData")))
+region_idx = contrast_map_array[,5] == code
+contrast_region = contrast_map_array[region_idx,]
 
-dim(peak_df)
 summary(peak_df)
 ```
 
+
 ```{r}
-region_idx = contrast_map_array[,5] == code
-contrast_region = contrast_map_array[region_idx,]
+xi_1 = unique(peak_df$x1)
+xi_2 = unique(peak_df$x2)
+xi_3 = unique(peak_df$x3)
+x = contrast_region[,1:3]; y = contrast_region[,4]
+summary(y)
+train_index = sample.int(nrow(x), round(0.9*nrow(x)))
+
+xi_1 = (xi_1-min(x[,1])) / (max(x[,1])-min(x[,1]))
+xi_2 = (xi_2-min(x[,2])) / (max(x[,2])-min(x[,2]))
+xi_3 = (xi_3-min(x[,3])) / (max(x[,3])-min(x[,3]))
+
+x[,1] = (x[,1]-min(x[,1])) / (max(x[,1])-min(x[,1]))
+x[,2] = (x[,2]-min(x[,2])) / (max(x[,2])-min(x[,2]))
+x[,3] = (x[,3]-min(x[,3])) / (max(x[,3])-min(x[,3]))
+
+z = tri_tensor_spline(x, xi_1, xi_2, xi_3, 1, 1, 1, TRUE, TRUE, TRUE)
+df = data.frame(cbind(y, z))
+lm = lm(y ~ ., data = df)
+y_hat = predict(lm, df)
+
+knots = as.matrix(expand.grid(xi_1, xi_2, xi_3))
+distance = outer(1:nrow(knots), 1:nrow(x), Vectorize(function(i, j) sum((knots[i,] - x[j,])^2)))
+effe_idx = apply(distance, 1, min) < 0.0025
+# sum(effe_idx)
+knots = knots[effe_idx, ]
+
+z_new = tri_tensor_spline(knots, xi_1, xi_2, xi_3, 1, 1, 1, TRUE, TRUE, TRUE)
+z_new = data.frame(z_new)
+colnames(z_new) = colnames(df)[-1]
+
+y_new = predict(lm, z_new)
+summary(y_new)
+
+is_peak = rep(NA, nrow(knots))
+for (i in 1:nrow(knots)) {
+  x_cand = knots[i,]
+  x_nbs = as.matrix(expand.grid(seq(x_cand[1]-0.02, x_cand[1]+0.02, 0.01), seq(x_cand[2]-0.02, x_cand[2]+0.02, 0.01), seq(x_cand[3]-0.02, x_cand[3]+0.02, 0.01)))
+  z_nbs = tri_tensor_spline(x_nbs, xi_1, xi_2, xi_3, 1, 1, 1, TRUE, TRUE, TRUE)
+  z_nbs = data.frame(z_nbs)
+  colnames(z_nbs) = colnames(df)[-1]
+
+  # make predictions
+  y_nbs = predict(lm, z_nbs)
+  
+  is_peak[i] = y_new[i] >= max(y_nbs) || y_new[i] <= min(y_nbs)
+}
+```
+
+
+```{r}
+num_peak = sum(abs(y_new[is_peak]) > quantile(abs(y), 0.975))
+
+cat("quantiles:", quantile(abs(y), 0.975), "\n")
+cat("number of peaks:", num_peak, "\n")
+```
+
+```{r}
+knots = as.matrix(peak_df[,1:3])
+x = contrast_region[,1:3]
+
+distance = outer(1:nrow(knots), 1:nrow(x), Vectorize(function(i, j) sum((knots[i,] - x[j,])^2)))
+
+effe_idx = apply(distance, 1, min) < 1
+
+peak_df = peak_df[effe_idx, ]
+summary(peak_df)
 
 quantiles = quantile(contrast_region[,4], c(0.025, 0.975))
 num_pos_peak = sum(peak_df$y_hat[peak_df$max] > quantiles[2])
 num_neg_peak = sum(peak_df$y_hat[peak_df$min] < quantiles[1])
 
-cat("number of positive peaks:", num_pos_peak, "\n")
+cat("quantiles:", quantiles, "\n")
 cat("number of negative peaks:", num_neg_peak, "\n")
+cat("number of positive peaks:", num_pos_peak, "\n")
 ```
-
-
-```{r}
-global_max_idx = which.max(abs(contrast_region[,4]))
-contrast_region[global_max_idx,]
-```
-
-```{r}
-peak_df[peak_df$min==TRUE,]
-```
-
-```{r}
-peak_df[peak_df$max==TRUE,]
-```
-
-
-
-```{r}
-summary(contrast_region)
-```
-
-```{r}
-quantile(contrast_region[,4], c(0, 0.025, 0.05, 0.95, 0.975, 1))
-```
-
