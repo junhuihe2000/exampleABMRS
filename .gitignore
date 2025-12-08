@@ -1,0 +1,7 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# Ignore generated fmri outputs
+fmri/output/*.RData

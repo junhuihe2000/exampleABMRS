@@ -1,0 +1,15 @@
+---
+title: "Experiment Title"
+author: "Junhui He"
+date: "`r Sys.Date()`"
+format: html
+---
+
+load packages
+```{r}
+library(devtools)
+```
+
+```{r}
+build_readme()
+```

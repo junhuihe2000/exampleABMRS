@@ -1,0 +1,131 @@
+---
+title: "Curve Spline Table"
+author: "He Junhui"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(EBARS)
+library(splines)
+library(ggplot2)
+library(ggpubr)
+source("bars.R")
+```
+
++ Test functions
+```{r}
+f1 = function(x) {
+  return(10*sin(2*pi*(x)))
+}
+
+f2 = function(x) {
+  return(50*exp(-100*(x-0.5)^2))
+}
+
+f3 <- function(x){
+  knot = c(0.4,0.4,0.4,0.4,0.7)
+  beta = matrix(c(2,-5,5,2,-3,-1,2),ncol=1)
+  B = ns(x,knots=knot,intercept=TRUE,Boundary.knots=c(0,1))
+  y = 5*B%*%beta
+  return(y)
+}
+
+f4 = function(x) {
+  return(40*(x%%0.167))
+}
+```
+
+
+
+```{r}
+p = 0.025 # censored threshold
+n_exp = 50 # experiment number
+mse_array = array(dim=c(4,5,n_exp))
+dim_names = list(c("Case 1","Case 2","Case 3","Case 4"),c("EBARS 1","EBARS 2","EBARS 3","BARS","Smooth Spline"))
+dimnames(mse_array) = dim_names
+noises = c(2,2,4,1)
+fs = list(f1,f2,f3,f4)
+```
+
+```{r}
+set.seed(1234)
+```
+
++ Run simulation
+
+```{r}
+time.start = Sys.time()
+# m_train = 200; m_test = 100
+m_train = 500; m_test = 200
+# generate train data
+x_train = seq(0,1,length.out=m_train)
+
+for(k in c(1:n_exp)) {
+cat(paste0("The ",k,"-th experiment\n"))
+for(i in c(1:4)) {
+y_train = sapply(x_train,fs[[i]])
+y_obs = y_train + rnorm(m_train,0,noises[[i]])
+x_new = runif(m_test,0,1)
+y_new = sapply(x_new,fs[[i]])
+
+# EBARS with gamma = 1
+ebars_1 = ebars(x_train, y_obs, gamma = 1, times = 3, intercept = TRUE)
+ebars_1$mcmc(burns=1000,steps=1000)
+y_ebars_1 = ebars_1$predict(x_new)
+mse_array[i,1,k] = mean(sort((y_new-y_ebars_1)^2)[round(p*m_test):round((1-p)*m_test)])
+
+# EBARS with gamma = 0.5
+ebars_2 = ebars(x_train, y_obs, gamma = 0.5, times = 1, intercept = TRUE)
+ebars_2$mcmc(burns=1000,steps=1000)
+y_ebars_2 = ebars_2$predict(x_new)
+mse_array[i,2,k] = mean(sort((y_new-y_ebars_2)^2)[round(p*m_test):round((1-p)*m_test)])
+
+# EBARS with gamma = 0
+ebars_3 = ebars(x_train, y_obs, gamma = 0, times = 0.5, intercept = TRUE)
+ebars_3$mcmc(burns=1000,steps=1000)
+y_ebars_3 = ebars_3$predict(x_new)
+mse_array[i,3,k] = mean(sort((y_new-y_ebars_3)^2)[round(p*m_test):round((1-p)*m_test)])
+
+# BARS
+bars_conf = BARS(x_train,y_obs, burns_in = 1000, effective_length = 1000)
+y_bars = bars_fit(x_new, bars_conf)
+mse_array[i,4,k] = mean(sort((y_new-y_bars)^2)[round(p*m_test):round((1-p)*m_test)])
+
+# Smooth spline
+splinesmooth = smooth.spline(x_train,y_obs)
+y_ss = predict(splinesmooth,x_new)$y
+mse_array[i,5,k] = mean(sort((y_new-y_ss)^2)[round(p*m_test):round((1-p)*m_test)])
+
+}
+}
+time.end = Sys.time()
+print(time.end-time.start)
+```
+
+```{r}
+mse_mean = array(dim=c(4,5),dimnames = dim_names) # mean of mse
+mse_sd = array(dim=c(4,5),dimnames = dim_names) # sd of mse
+mse = data.frame(array(dim=c(4,5),dimnames = dim_names))
+
+for(i in 1:4) {
+  for(j in 1:5) {
+    mse_mean[i,j] = mean(mse_array[i,j,])
+    mse_sd[i,j] = sd(mse_array[i,j,])
+    mse[i,j] = paste0(round(mse_mean[i,j],digits=3),"(",round(mse_sd[i,j],digits=3),")")
+  }
+}
+
+print(mse)
+```
+
++ Write tables
+```{r}
+write.csv(mse,file=file.path("tables","curve_mse-500.csv"))
+```
+

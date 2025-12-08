@@ -1,0 +1,89 @@
+---
+title: "Estimate Spiral"
+author: "He Junhui"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(EBARS)
+library(vegan)
+library(princurve)
+
+source("G:/HeJunhui/research/2023/exampleEBARS/exampleEBARS/manifold/algo/Principal_Manifold_Estimation.R")
+```
+
++ Generate data
+
+```{r}
+set.seed(1234)
+```
+
+```{r}
+mani = "spiral"
+n_exp = 20
+fileroot = "G:/HeJunhui/research/2023/exampleEBARS/exampleEBARS/manifold"
+# model parameters
+I = 1000
+D = 2; d = 1
+sd = 0.2
+
+embedding_map <- function(x, d) {
+  u = isomap(dist(x), ndim=d, k=7)$points
+  return(u)
+}
+```
+
+
+```{r,include=FALSE}
+t.start = Sys.time()
+for(rep in 1:n_exp) {
+  # generate samples
+  theta = seq(0, 6*pi, length.out=I)
+  x = cbind(2*(theta+4)^(0.7)*cos(theta), 2*(theta+4)^(0.7)*sin(theta))
+  xobs = x + cbind(rnorm(I,0,sd), rnorm(I,0,sd))
+  cat("spiral noisy samples with dim (", dim(xobs), ")\n")
+  write.csv(t(xobs), file=file.path(fileroot, "dataset", mani, paste0(rep,"_less.csv")))
+  
+  # manifold estimation
+  # TSME
+  t1 = Sys.time()
+  result.ebars = manifold_fitting(xobs, d, embedding_map)
+  x.ebars = result.ebars$fitted
+  t2 = Sys.time()
+  cat(paste0("Trial ",rep," TSME\n"))
+  print(t2-t1)
+  write.csv(t(x.ebars), file=file.path(fileroot, "output", mani, paste0("tsme_trial",rep,"_less.csv")))
+  
+  # PME
+  t1 = Sys.time()
+  result.pme = PME(xobs, d, embedding_map, tuning.para.seq=exp(-5:5), epsilon=0.1)
+  x.pme = result.pme$fitted
+  t2 = Sys.time()
+  cat(paste0("Trial ",rep," PME\n"))
+  print(t2-t1)
+  write.csv(t(x.pme), file=file.path(fileroot, "output", mani, paste0("pme_trial",rep,"_less.csv")))
+  
+  # PC
+  t1 = Sys.time()
+  result.pc = principal_curve(xobs, smoother="smooth_spline")
+  x.pc = result.pc$s
+  t2 = Sys.time()
+  cat(paste0("Trial ",rep," PC\n"))
+  print(t2-t1)
+  write.csv(t(x.pc), file=file.path(fileroot, "output", mani, paste0("pc_trial",rep,"_less.csv")))
+}
+t.end = Sys.time()
+```
+
+```{r}
+print(t.end-t.start)
+# Time difference of 41.62009 mins
+# Time difference of 27.94512 mins
+```
+

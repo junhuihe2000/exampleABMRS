@@ -1,0 +1,55 @@
+---
+title: "Process Data"
+author: "Junhui He"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, include = FALSE)
+```
+
+```{r}
+# load package
+library(oro.nifti)
+library(neurobase)
+library(EBARS)
+library(mgcv)
+
+# file path
+data_path = "G:/Phd/Data/HCPFMRI/WM_contrasts"
+
+set.seed(1234)
+
+# read data
+index_subjects = read.csv(file.path(data_path, "index2bk-0bk.csv"))
+subject_name = sample(index_subjects$subject, 1)
+
+# read nii
+contrast_map = readnii(file.path(data_path, "Contrasts", paste0(subject_name, "_2bk-0bk.nii")))
+
+slice_idxs = c(25, 35, 50, 65)
+```
+
+```{r}
+for (idx in slice_idxs) {
+  contrast_slice = contrast_map[,,idx]
+  
+  slice_array = cbind(c(row(contrast_slice)), c(col(contrast_slice)), c(contrast_slice))
+  slice_array = slice_array[!is.na(slice_array[,3]),]
+  
+  # random shuffle
+  shuffle_idx = sample.int(nrow(slice_array))
+  slice_array = slice_array[shuffle_idx,]
+  
+  # normalize locations
+  x = as.matrix(slice_array[,1:2])
+  for (i in 1:2) {
+    x[,i] = (x[,i] - min(x[,i])) / (max(x[,i]) - min(x[,i]))
+  }
+  y = slice_array[,3]
+  
+  save(x, y, file = paste0("data/slice_", idx, ".RData"))
+}
+```
+

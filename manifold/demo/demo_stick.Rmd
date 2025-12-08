@@ -1,0 +1,151 @@
+---
+title: "Estimate broken stick"
+author: "He Junhui"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(EBARS)
+library(umap)
+library(princurve)
+
+source("Principal_Manifold_Estimation.R")
+```
+
++ Generate data
+
+```{r}
+set.seed(1234)
+```
+
+```{r}
+I = 1000
+theta = c(seq(-pi/2,0,length.out=I/2), seq(pi/2,pi,length.out=I/2))
+x = 10*rbind(cbind(cos(theta[1:(I/2)]),1+sin(theta[1:(I/2)])),
+          cbind(2+cos(theta[(I/2+1):(2*I/2)]),0+sin(theta[(I/2+1):(2*I/2)])))
+xobs = rbind(x + cbind(rnorm(I,0,0.2),rnorm(I,0,0.2)))
+
+ggplot() + geom_point(aes(xobs[,1],xobs[,2]),col="red",pch=16,cex=0.5) + 
+  xlab("") + ylab("")
+```
+
+```{r}
+N = 3000
+theta_grid = c(seq(-pi/2,0,length.out=N/2), seq(pi/2,pi,length.out=N/2))
+mesh = 10*rbind(cbind(cos(theta_grid[1:(N/2)]),1+sin(theta_grid[1:(N/2)])),
+          cbind(2+cos(theta_grid[(N/2+1):(2*N/2)]),0+sin(theta_grid[(N/2+1):(2*N/2)])))
+```
+
+```{r}
+gse = rep(NA,I)
+for(i in c(1:I)) {
+  gse[i] = min(apply(mesh,1,function(p) {return(sum((xobs[i,]-p)^2))}))
+}
+gmse = mean(gse)
+gmse
+```
+
++ Uniform Manifold Approximation Map
+```{r}
+custom.config = umap.defaults
+custom.config$n_components = 1
+custom.config$min_dist = 0.1
+custom.config$n_neighbors = 20
+custom.config$metric = "euclidean"
+manifold.umap = umap(xobs, config=custom.config)
+
+u.umap = manifold.umap$layout
+```
+
+```{r}
+ggplot() + geom_point(aes(u.umap[,1],xobs[,2]),col="red",pch=16,cex=0.5) + 
+  xlab("u") + ylab("x_1")
+```
+
++ Manifold Estimation
+
+```{r}
+# TSME
+embedding_map <- function(x, d) {
+  custom.config = umap.defaults
+  custom.config$n_components = d
+  custom.config$min_dist = 0.3
+  custom.config$n_neighbors = 20
+  u = umap(x, config=custom.config)$layout
+  return(u)
+}
+
+result.ebars = manifold_fitting(xobs, d=1, embedding_map)
+u.ebars = result.ebars$u
+x.ebars = result.ebars$fitted
+```
+
+```{r}
+ggplot() + geom_point(aes(x.ebars[,1],x.ebars[,2]),col="red",pch=16,cex=0.5) +
+  xlab("") + ylab("")
+```
+
+
+```{r}
+gse.tsme = rep(NA,I)
+for(i in c(1:I)) {
+  gse.tsme[i] = min(apply(mesh,1,function(p) {return(sum((x.ebars[i,]-p)^2))}))
+}
+gmse.tsme = mean(gse.tsme)
+gmse.tsme
+```
+
+
+
+```{r, include=FALSE}
+# PME
+result.pme = PME(xobs, d=1, embedding_map)
+x.pme = result.pme$fitted
+```
+
+```{r}
+ggplot() + geom_point(aes(x.pme[,1],x.pme[,2]),col="red",pch=16,cex=0.5) +
+  xlab("") + ylab("")
+```
+
+```{r}
+gse.pme = rep(NA,I)
+for(i in c(1:I)) {
+  gse.pme[i] = min(apply(mesh,1,function(p) {return(sum((x.pme[i,]-p)^2))}))
+}
+gmse.pme = mean(gse.pme)
+gmse.pme
+```
+
+```{r, include=FALSE}
+# Principal Curve
+result.pc = principal_curve(xobs, smoother="smooth_spline")
+x.pc = result.pc$s
+```
+
+```{r}
+ggplot() + geom_point(aes(x.pc[,1],x.pc[,2]),col="red",pch=16,cex=0.5) +
+  xlab("") + ylab("")
+```
+
+```{r}
+gse.pc = rep(NA,I)
+for(i in c(1:I)) {
+  gse.pc[i] = min(apply(mesh,1,function(p) {return(sum((x.pc[i,]-p)^2))}))
+}
+gmse.pc = mean(gse.pc)
+gmse.pc
+```
+
+
+```{r}
+ggplot() + geom_point(aes(u.ebars[,1],x.ebars[,2]),col="red",pch=16,cex=0.5) +
+  xlab("") + ylab("")
+```
+

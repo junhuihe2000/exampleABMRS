@@ -1,0 +1,122 @@
+---
+title: "Curve Spline Plot"
+author: "He Junhui"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(EBARS)
+library(splines)
+source("bars.R")
+```
+
++ Test functions
+```{r}
+f1 = function(x) {
+  return(10*sin(2*pi*(x)))
+}
+
+f2 = function(x) {
+  return(50*exp(-100*(x-0.5)^2))
+}
+
+f3 <- function(x){
+  knot = c(0.4,0.4,0.4,0.4,0.7)
+  beta = matrix(c(2,-5,5,2,-3,-1,2),ncol=1)
+  B = ns(x,knots=knot,intercept=TRUE,Boundary.knots=c(0,1))
+  y = 5*B%*%beta
+  return(y)
+}
+
+f4 = function(x) {
+  return(40*(x%%0.167))
+}
+```
+
+
+```{r}
+noises = c(2,2,4,1)
+fs = list(f1,f2,f3,f4)
+```
+
+```{r}
+set.seed(1234)
+```
+
++ Run simulation
+
+```{r}
+m_train = 200
+# generate train data
+x_train = seq(0,1,length.out=m_train)
+ys_train = array(dim=c(4,m_train))
+ys = array(dim=c(4,7,m_train))
+
+for(i in c(1:4)) {
+ys_train[i,] = sapply(x_train,fs[[i]])
+ys[i,1,] = ys_train[i,] + rnorm(m_train,0,noises[[i]])
+
+# EBARS with gamma = 1
+ebars_1 = ebars(x_train, ys[i,1,], gamma = 1, times = 3, intercept = TRUE)
+ebars_1$mcmc(burns=2000,steps=2000)
+ys[i,2,] = ebars_1$predict(x_train)
+
+# EBARS with gamma = 0.5
+ebars_2 = ebars(x_train, ys[i,1,], gamma = 0.5, times = 1, intercept = TRUE)
+ebars_2$mcmc(burns=2000,steps=2000)
+ys[i,3,] = ebars_2$predict(x_train)
+
+# EBARS with gamma = 0
+ebars_3 = ebars(x_train, ys[i,1,], gamma = 0, times = 0.5, intercept = TRUE)
+ebars_3$mcmc(burns=2000,steps=2000)
+ys[i,4,] = ebars_3$predict(x_train)
+
+# BARS
+bars_conf = BARS(x_train,ys[i,1,], burns_in = 2000, effective_length = 2000)
+ys[i,5,] = bars_fit(x_train, bars_conf)
+
+# Smooth spline
+splinesmooth = smooth.spline(x_train,ys[i,1,])
+ys[i,6,] = predict(splinesmooth,x_train)$y
+}
+```
+
+```{r}
+pdf(file = file.path("../figures", "curve_fitting.pdf"), width = 12, height = 9)
+par(mfrow=c(3,6))
+par(mar=c(0,0,0,0))
+for(i in c(1,3,4)) {
+plot(x_train,ys[i,1,],col="red",cex=0.5,pch=16,ylim=range(ys[i,1,]),xlab="",ylab="",xaxt='n',yaxt='n')
+points(x_train,ys_train[i,],type="l",lwd=1.5)
+
+plot(x_train,ys[i,2,],type="l",lwd=1.5,ylim=range(ys[i,1,]),xlab="",ylab="",xaxt='n',yaxt='n')
+plot(x_train,ys[i,3,],type="l",lwd=1.5,ylim=range(ys[i,1,]),xlab="",ylab="",xaxt='n',yaxt='n')
+plot(x_train,ys[i,4,],type="l",lwd=1.5,ylim=range(ys[i,1,]),xlab="",ylab="",xaxt='n',yaxt='n')
+plot(x_train,ys[i,5,],type="l",lwd=1.5,ylim=range(ys[i,1,]),xlab="",ylab="",xaxt='n',yaxt='n')
+plot(x_train,ys[i,6,],type="l",lwd=1.5,ylim=range(ys[i,1,]),xlab="",ylab="",xaxt='n',yaxt='n')
+}
+dev.off()
+```
+
+```{r}
+pdf(file = file.path("../figures", "curve_fitting.pdf"))
+par(mfrow=c(4,6))
+par(mar=c(0,0,0,0), oma=c(0,0,2,0))
+for(i in c(1:4)) {
+plot(x_train,ys[i,1,],col="red",cex=0.5,pch=16,ylim=range(ys[i,1,]),xlab="",ylab="",xaxt='n',yaxt='n')
+points(x_train,ys_train[i,],type="l",lwd=1.5)
+
+plot(x_train,ys[i,2,],type="l",lwd=1.5,ylim=range(ys[i,1,]),xlab="",ylab="",xaxt='n',yaxt='n')
+plot(x_train,ys[i,3,],type="l",lwd=1.5,ylim=range(ys[i,1,]),xlab="",ylab="",xaxt='n',yaxt='n')
+plot(x_train,ys[i,4,],type="l",lwd=1.5,ylim=range(ys[i,1,]),xlab="",ylab="",xaxt='n',yaxt='n')
+plot(x_train,ys[i,5,],type="l",lwd=1.5,ylim=range(ys[i,1,]),xlab="",ylab="",xaxt='n',yaxt='n')
+plot(x_train,ys[i,6,],type="l",lwd=1.5,ylim=range(ys[i,1,]),xlab="",ylab="",xaxt='n',yaxt='n')
+}
+dev.off()
+```
+

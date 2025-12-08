@@ -1,0 +1,74 @@
+---
+title: "Peak detection"
+author: "Junhui He"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# load package
+library(oro.nifti)
+library(neurobase)
+library(EBARS)
+
+load("data/2bk-0bk_contrast.RData")
+```
+
+```{r}
+idx = contrast_map_array[,5] == aal_codes[1]
+x = contrast_map_array[idx, 1:3]
+# normalize locations
+for (i in 1:3) {
+  x[,i] = (x[,i]- min(x[,i])) / (max(x[,i]) - min(x[,i]))
+}
+y = contrast_map_array[idx, 4]
+```
+
+```{r}
+model_ebars = triebars(x, y, n_1 = 100, n_2 = 100, n_3 = 100, degree_1 = 1, degree_2 = 1, degree_3 = 1)
+time_start = Sys.time()
+model_ebars$mcmc(burns=100, steps=100)
+time_end = Sys.time()
+print(time_end - time_start)
+```
+
+```{r}
+## ----------------------------------------------------------------------------------------------
+# fit a spline model
+knots = model_ebars$knots()
+z = tri_tensor_spline(x, xi_1=knots$xi_1, xi_2=knots$xi_2, xi_3=knots$xi_3, degree_1 = 1, degree_2 = 1, degree_3 = 1, intercept_1 = TRUE, intercept_2 = TRUE, intercept_3 = TRUE)
+reg_df = as.data.frame(z)
+reg_df$y = y
+lm_model = lm(y ~ ., data=reg_df)
+
+peak_df = data.frame(expand.grid(knots$xi_1, knots$xi_2, knots$xi_3))
+colnames(peak_df) = c("x1", "x2", "x3")
+peak_df$max = rep(FALSE, nrow(peak_df))
+peak_df$min = rep(FALSE, nrow(peak_df))
+```
+
+```{r, include=FALSE}
+for (i in 1:nrow(peak_df)) {
+  x_cand = unlist(peak_df[i,1:3])
+  x_nbs = expand.grid(seq(x_cand[1]-0.02, x_cand[1]+0.02, 0.01), seq(x_cand[2]-0.02, x_cand[2]+0.02, 0.01), seq(x_cand[3]-0.02, x_cand[3]+0.02, 0.01))
+  z = tri_tensor_spline(as.matrix(rbind(x_cand, x_nbs)), xi_1=knots$xi_1, xi_2=knots$xi_2, xi_3=knots$xi_3, degree_1 = 1, degree_2 = 1, degree_3 = 1, intercept_1 = TRUE, intercept_2 = TRUE, intercept_3 = TRUE)
+  z = as.data.frame(z)
+
+  # make predictions
+  y_hat = predict(lm_model, z)
+  
+  peak_df[i,4] = all(y_hat[1]>=y_hat[-1])
+  peak_df[i,5] = all(y_hat[1]<=y_hat[-1])
+}
+```
+
+```{r}
+for (j in 1:3) {
+  peak_df[,j] = peak_df[,j] * (max(contrast_map_array[idx,j]) - min(contrast_map_array[idx,j])) + min(contrast_map_array[idx,j])
+}
+```
+

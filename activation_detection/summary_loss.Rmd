@@ -1,0 +1,38 @@
+---
+title: "Summary Test MSE"
+author: "Junhui He"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+test_mses = array(NA, c(3, 4, 10))
+
+for (i in 1:10) {
+  load(file.path("output/output", paste0("test_mse_", i, ".RData")))
+  test_mses[,,i] = test_mse
+}
+
+test_mse_ave = data.frame(round(rowMeans(test_mses, dims = 2)*100, digits = 3))
+colnames(test_mse_ave) = c("slice_25", "slice_35", "slice_50", "slice_65")
+rownames(test_mse_ave) = c("ABMRS", "TPS", "TEP")
+print(test_mse_ave)
+```
+
+```{r}
+test_mse_sd = array(NA, c(3, 4))
+for (i in 1:3) {
+  for (j in 1:4) {
+    test_mse_sd[i, j] = sd(test_mses[i, j, ])
+  }
+}
+test_mse_sd = data.frame(round(test_mse_sd*100, digits = 3))
+colnames(test_mse_sd) = c("slice_25", "slice_35", "slice_50", "slice_65")
+rownames(test_mse_sd) = c("ABMRS", "TPS", "TEP")
+print(test_mse_sd)
+```
+

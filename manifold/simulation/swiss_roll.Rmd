@@ -1,0 +1,67 @@
+---
+title: "Estimate Swiss roll"
+author: "He Junhui"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(EBARS)
+library(vegan)
+```
+
++ Generate data
+
+```{r}
+set.seed(1234)
+```
+
+```{r}
+mani = "swiss_roll"
+n_exp = 20
+fileroot = "G:/HeJunhui/research/2023/exampleEBARS/exampleEBARS/manifold"
+# model parameters
+I = 1500
+D = 3; d = 2
+sd = 1.5
+
+embedding_map <- function(x, d) {
+  u = isomap(dist(x), ndim=d, k=15)$points
+  return(u)
+}
+```
+
+```{r,include=FALSE}
+t.start = Sys.time()
+for(rep in 1:n_exp) {
+  # generate samples
+  theta = runif(I,pi,5*pi)
+  x = cbind(3*theta*cos(theta),21*runif(I),3*theta*sin(theta))
+  xobs = x + matrix(rnorm(3*I,0,sd),I,3)
+  cat("swiss roll noisy samples with dim (", dim(xobs), ")\n")
+  write.csv(t(xobs), file=file.path(fileroot, "dataset", mani, paste0(rep,"_less.csv")))
+  
+  # manifold estimation
+  # TSME
+  t1 = Sys.time()
+  result.ebars = manifold_fitting(xobs, d, embedding_map)
+  x.ebars = result.ebars$fitted
+  t2 = Sys.time()
+  cat(paste0("Trial ",rep," TSME\n"))
+  print(t2-t1)
+  write.csv(t(x.ebars), file=file.path(fileroot, "output", mani, paste0("tsme_trial",rep,"_less.csv")))
+}
+t.end = Sys.time()
+```
+
+```{r}
+print(t.end-t.start)
+# Time difference of 52.75643 mins
+# Time difference of 7.363558 mins
+```
+

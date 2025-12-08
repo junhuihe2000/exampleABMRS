@@ -1,0 +1,59 @@
+---
+title: "Fetal Growth"
+author: "Junhui He"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r package}
+library(ggplot2)
+library(EBARS)
+```
+
+
+## Read and Display Data
+
+```{r data}
+# read data
+res_bodyfat = read.csv('../datasets/res_bodyfat/res_bodyfat.csv')
+# plot
+ggplot(res_bodyfat, aes(bmi, pbfm)) + geom_point(shape = 1)
+```
+
+```{r knot-inference}
+set.seed(1234) # set random seed
+# EBARS
+ebars_model = ebars(fetal$age, fetal$lnfetal, degree = 1, n = 1000)
+ebars_model$mcmc(burns=5000, steps=5000)
+knot_samples = ebars_model$samples()
+counts = sapply(knot_samples, function(xi) {return(length(xi))}) # calculate the number of knots
+nodes = unlist(knot_samples) # calculate the posterior distribution
+```
+
+```{r plot}
+# plot counts
+p_1 = ggplot(mapping=aes(x=counts)) + geom_bar(aes(y=after_stat(prop))) + ylab("") + xlab("") + geom_vline(aes(xintercept=mean(counts)), color="red", linetype="dashed") + scale_x_continuous(breaks=seq(min(counts),max(counts)),labels=seq(min(counts),max(counts)))
+# plot nodes
+p_2 = ggplot(mapping=aes(x=nodes)) + geom_density(adjust=1) + ylab("") + xlab("")
+```
+
+```{r regression}
+# fix the number of knots
+ebars_model = ebars(fetal$age, fetal$lnfetal, degree = 1, k = 2, n = 1000)
+ebars_model$mcmc(burns=5000, steps=5000)
+knot_samples = ebars_model$samples()
+nodes_mat = sapply(knot_samples, function(xi) {return(xi)})
+# predict
+y_hat = ebars_model$predict(fetal$age)
+# plot
+ggplot(fetal, aes(age, lnfetal)) + geom_point(shape = 1) + geom_line(aes(age, y_hat), color = 'red') + ylim(1.0, 4.0) + xlab('Age in years') + ylab('fetal skinfold thickness in mm (log)')
+```
+
+```{r}
+ggplot(mapping=aes(x=c(nodes_mat))) + geom_density(adjust=0.5) + ylab("") + xlab("")
+```
+

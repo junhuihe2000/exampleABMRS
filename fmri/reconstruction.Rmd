@@ -1,0 +1,140 @@
+---
+title: "Voxel level reconstruct contrast maps"
+author: "Junhui He"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# load package
+library(oro.nifti)
+library(neurobase)
+library(EBARS)
+library(mgcv)
+library(readxl)
+
+# file path
+data_path = "G:/Phd/Data/HCPFMRI/WM_contrasts"
+
+set.seed(1234)
+
+# read data
+index_subjects = read.csv(file.path(data_path, "index2bk-0bk.csv"))
+subject_name = sample(index_subjects$subject, 1)
+aalregion = read_xls(file.path(data_path, "AALregion_full.xls"))
+
+aal_regions = c("Par.Inf.L", "Fro.Mid.Ord.L", "Par.Sup.L", "Par.Sup.R", "Fro.Mid.Ord.R", "Fro.Inf.Ope.L", "Pre.L", "Fro.Mid.L", "Par.Inf.R", "Fro.Sup.Orb.L")
+aal_codes = c(6201, 2211, 6101, 6102, 2212, 2301, 2001, 2201, 6202, 2111)
+
+# read nii
+contrast_map = readnii(file.path(data_path, "Contrasts", paste0(subject_name, "_2bk-0bk.nii")))
+aal_mni = readnii(file.path(data_path, "AAL_MNI_2mm.nii"))
+
+```
+
+```{r}
+for (i in 1:10) {
+  region_size = sum(is.element(aal_mni, aal_codes[i]))
+  print(region_size)
+}
+```
+
+```{r}
+for (i in 1:10) {
+  region_size = sum(is.element(contrast_map_array[,5], aal_codes[i]))
+  print(region_size)
+}
+```
+
+
+```{r}
+contrast_map_array = array(NA, c(length(contrast_map), 5))
+colnames(contrast_map_array) = c("x1", "x2", "x3", "y", "code")
+idx = 0
+for (i in 1:dim(contrast_map)[1]) {
+  for (j in 1:dim(contrast_map)[2]) {
+    for (k in 1:dim(contrast_map)[3]) {
+      idx = idx + 1
+      contrast_map_array[idx,] = c(i, j, k, contrast_map[i, j, k], aal_mni[i, j, k])
+    }
+  }
+}
+
+contrast_map_array = contrast_map_array[!is.na(contrast_map_array[,4]),]
+
+# random shuffle
+shuffle_idx = sample.int(nrow(contrast_map_array))
+contrast_map_array = contrast_map_array[shuffle_idx,]
+
+print(summary(contrast_map_array))
+
+save(contrast_map_array, file = "data/2bk-0bk_contrast.RData")
+```
+
+```{r}
+idx = contrast_map_array[,5] == aal_codes[5]
+x = contrast_map_array[idx, 1:3]
+# normalize locations
+for (i in 1:3) {
+  x[,i] = (x[,i]- min(x[,i])) / (max(x[,i]) - min(x[,i]))
+}
+y = contrast_map_array[idx, 4]
+train_idx = sample.int(nrow(x), round(nrow(x)/10*8))
+```
+
+```{r}
+model_ebars = triebars(x[train_idx,], y[train_idx], k_1 = 5, k_2 = 5, k_3 = 5, n_1 = 100, n_2 = 100, n_3 = 100, degree_1 = 1, degree_2 = 1, degree_3 = 1)
+time_start = Sys.time()
+model_ebars$mcmc(burns=100, steps=100)
+time_end = Sys.time()
+print(time_end - time_start)
+```
+
+```{r}
+model_ebars$knots()
+```
+
+```{r}
+test_mse = rep(NA, 3)
+## ----------------------------------------------------------------------------------------------
+# fit a spline model
+knots = model_ebars$knots()
+z = tri_tensor_spline(x, xi_1=knots$xi_1, xi_2=knots$xi_2, xi_3=knots$xi_3, degree_1 = 1, degree_2 = 1, degree_3 = 1, intercept_1 = TRUE, intercept_2 = TRUE, intercept_3 = TRUE)
+reg_df = as.data.frame(z)
+reg_df$y = y
+lm_model = lm(y ~ ., data=reg_df, subset = train_idx)
+
+# make predictions
+y_hat = predict(lm_model, reg_df[-train_idx,])
+
+# compute test mse
+test_mse[1] = mean((y_hat-y[-train_idx])^2)
+# Thin Plate Spline
+x_train_df = data.frame(x1 = x[train_idx,1], x2 = x[train_idx,2], x3 = x[train_idx,3])
+x_new_df = data.frame(x1 = x[-train_idx,1], x2 = x[-train_idx,2], x3 = x[-train_idx,3])
+model_tps = gam(y[train_idx]~s(x1, x2, x3), data = x_train_df)
+y_tps = predict(model_tps,x_new_df)
+test_mse[2] = mean((y[-train_idx]-y_tps)^2)
+# Tensor Product Spline
+model_tep = gam(y[train_idx]~te(x1, x2, x3), data = x_train_df)
+y_tep = predict(model_tep, x_new_df)
+test_mse[3] = mean((y[-train_idx]-y_tep)^2)
+
+print(test_mse * 100)
+```
+
+```{r}
+df = data.frame(cbind(x, y))
+lm = lm(y ~ ., data = df, subset = train_idx)
+# make predictions
+y_hat = predict(lm, df[-train_idx,])
+
+# compute test mse
+mean((y_hat-y[-train_idx])^2) * 100
+```
+
+

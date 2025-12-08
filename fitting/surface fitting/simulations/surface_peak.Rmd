@@ -1,0 +1,258 @@
+---
+title: "Peak detection in surface fitting"
+author: "Junhui He"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# load package
+library(EBARS)
+```
+
+```{r}
+# define functions
+f1 <- function(x) {
+  y = -40*(exp(-10*(x[,1]-0.3)^2-10*(x[,2]-0.3)^2) - exp(-10*(x[,1]-0.7)^2-10*(x[,2]-0.7)^2))
+  return(y)
+}
+
+# plot contour
+grid = seq(0, 1, by = 0.01)
+contour(x=grid,y=grid,z=outer(grid,grid,function(x,y) {return(f1(cbind(x,y)))}),axes = TRUE,frame.plot =TRUE)
+```
+
+```{r}
+f1_scalar <- function(x) {
+  y = -40*(exp(-10*(x[1]-0.3)^2-10*(x[2]-0.3)^2) - exp(-10*(x[1]-0.7)^2-10*(x[2]-0.7)^2))
+  return(y)
+}
+
+p_1 = optim(c(0.3, 0.3), f1_scalar)$par
+p_2 = optim(c(0.7, 0.7), f1_scalar, control = list(fnscale = -1))$par
+
+p_1
+p_2
+```
+
+
+```{r}
+set.seed(1234)
+
+# generate training samples
+m = 1000
+x = cbind(runif(m), runif(m))
+y = f1(x)
+y_obs = y + rnorm(m, 0, 1)
+```
+
+```{r}
+# run surface EBARS
+my_binebars = binebars(x, y_obs, gamma = 1, n_1 = 1000, n_2 = 1000, degree_1 = 1, degree_2 = 1)
+my_binebars$mcmc(burns = 500, steps = 500)
+```
+
+```{r}
+knots = my_binebars$samples()
+l = length(knots$xi_1)
+
+peak_samples = list()
+
+for (i in 1:l) {
+  xi_1 = knots$xi_1[[i]]; xi_2 = knots$xi_2[[i]]
+  # fit s linear spline regression
+  z = tensor_spline(x, xi_1, xi_2, degree_1 = 1, degree_2 = 1, intercept_1 = TRUE, intercept_2 = TRUE)
+  reg_df = data.frame(z, y = y_obs)
+  lm_model = lm(y ~ ., data = reg_df)
+  
+  xis = as.matrix(expand.grid(xi_1, xi_2))
+  is_peak = array(NA, c(nrow(xis), 2))
+  for (j in 1:nrow(xis)) {
+    xi = xis[j, ]
+    x_neigh = as.matrix(expand.grid(seq(xi[1]-0.02, xi[1]+0.02, 0.01), 
+                          seq(xi[2]-0.02, xi[2]+0.02, 0.01)))
+    z_hat = tensor_spline(rbind(xi, x_neigh), xi_1, xi_2, degree_1 = 1, degree_2 = 1, intercept_1 = TRUE, intercept_2 = TRUE)
+    y_hat = predict(lm_model, data.frame(z_hat))
+    
+    is_peak[j, 1] = y_hat[1] == min(y_hat)
+    is_peak[j, 2] = y_hat[1] == max(y_hat)
+  }
+  
+  peak_df = data.frame(xis, is_peak)
+  colnames(peak_df) = c("x_1", "x_2", "min", "max")
+  
+  peak_samples[[i]] = peak_df
+}
+```
+
+```{r}
+p_1 = rbind(c(0.2, 0.3)); p_2 = rbind(c(0.7, 0.8))
+detections = array(NA, c(l, 2))
+delta = 0.1
+peak_points = list("negative" = array(NA, c(l, 2)), "positive" = array(NA, c(l, 2)))
+peak_count = array(NA, c(l, 2))
+peak_distance = array(NA, c(l, 2))
+
+for (i in 1:l) {
+  peak_df = peak_samples[[i]]
+  # negative peak
+  neg_peak = as.matrix(peak_df[peak_df[,3]==1, 1:2])
+  peak_points$negative[i,] = neg_peak
+  peak_count[i, 1] = nrow(neg_peak)
+  peak_distance[i, 1] = sqrt(sum((neg_peak - p_1)^2))
+  detections[i, 1] = any(sqrt(rowSums((neg_peak - p_1)^2)) < delta)
+  # positive peak
+  pos_peak = as.matrix(peak_df[peak_df[,4]==1, 1:2])
+  peak_points$positive[i,] = pos_peak
+  peak_count[i, 2] = nrow(pos_peak)
+  peak_distance[i, 2] = sqrt(sum((pos_peak - p_2)^2))
+  detections[i, 2] = any(sqrt(rowSums((pos_peak - p_2)^2)) < delta)
+}
+```
+
+```{r}
+phat_1 = colMeans(peak_points$negative)
+sqrt(sum((phat_1 - p_1)^2))
+phat_2 = colMeans(peak_points$positive)
+sqrt(sum((phat_2 - p_2)^2))
+
+peak_distance[l,]
+```
+
+
+```{r}
+summary(peak_count)
+```
+
+```{r}
+summary(peak_distance)
+```
+
+
+```{r}
+summary(detections)
+```
+
+
+
+```{r}
+set.seed(1234)
+
+# peak points
+p_1 = c(0.286, 0.286); p_2 = c(0.714, 0.714)
+
+# experimental hyper-parameters
+m = 1000; num_exps = 20
+peaks = list()
+
+t_start = Sys.time()
+
+for (k in 1:num_exps) {
+
+t_1 = Sys.time()
+cat(paste0("The ", k, "-th experiment:\t"))
+# generate training samples
+x = cbind(runif(m), runif(m))
+y = f1(x)
+y_obs = y + rnorm(m, 0, 0.8)
+
+
+# run surface EBARS
+my_binebars = binebars(x, y_obs, gamma = 1, n_1 = 1000, n_2 = 1000, degree_1 = 1, degree_2 = 1)
+my_binebars$mcmc(burns = 1000, steps = 500)
+
+knots = my_binebars$samples()
+l = length(knots$xi_1)
+
+peak_samples = list()
+
+for (i in 1:l) {
+  xi_1 = knots$xi_1[[i]]; xi_2 = knots$xi_2[[i]]
+  # fit a linear spline regression model
+  z = tensor_spline(x, xi_1, xi_2, degree_1 = 1, degree_2 = 1, intercept_1 = TRUE, intercept_2 = TRUE)
+  reg_df = data.frame(z, y = y_obs)
+  lm_model = lm(y ~ ., data = reg_df)
+  
+  # classify whether a knot is a peak point
+  xis = as.matrix(expand.grid(xi_1, xi_2))
+  is_peak = array(NA, c(nrow(xis), 2))
+  for (j in 1:nrow(xis)) {
+    xi = xis[j, ]
+    x_neigh = as.matrix(expand.grid(seq(max(0, xi[1]-0.05), min(1, xi[1]+0.05), 0.005), 
+                          seq(max(0, xi[2]-0.05), min(1, xi[2]+0.05), 0.005)))
+    z_hat = tensor_spline(rbind(xi, x_neigh), xi_1, xi_2, degree_1 = 1, degree_2 = 1, intercept_1 = TRUE, intercept_2 = TRUE)
+    y_hat = predict(lm_model, data.frame(z_hat))
+    
+    is_peak[j, 1] = y_hat[1] == min(y_hat)
+    is_peak[j, 2] = y_hat[1] == max(y_hat)
+  }
+  
+  peak_df = data.frame(xis, is_peak)
+  colnames(peak_df) = c("x_1", "x_2", "min", "max")
+  
+  peak_samples[[i]] = peak_df
+}
+
+neg_peak_points = list(); pos_peak_points = list()
+peak_count = array(NA, c(l, 2))
+
+for (i in 1:l) {
+  peak_df = peak_samples[[i]]
+  # negative peak
+  neg_peak = as.matrix(peak_df[peak_df[,3]==1, 1:2])
+  neg_peak_points[[i]] = neg_peak
+  peak_count[i, 1] = nrow(neg_peak)
+  
+  # positive peak
+  pos_peak = as.matrix(peak_df[peak_df[,4]==1, 1:2])
+  pos_peak_points[[i]] = pos_peak
+  peak_count[i, 2] = nrow(pos_peak)
+}
+
+peaks[[k]] = list("negative_peak" = neg_peak_points,
+                  "positive_peak" = pos_peak_points,
+                  "count" = peak_count)
+
+t_2 = Sys.time()
+print(t_2 - t_1)
+
+}
+
+t_end = Sys.time()
+```
+
+```{r}
+peaks_list = peaks[[1]]
+print(summary(peaks_list$count))
+
+negative_peaks = array(NA, c(500, 2)); positive_peaks = array(NA, c(500, 2))
+for (i in 1:500) {
+  negative_peaks[i,] = peaks_list$negative_peak[[i]]
+  positive_peaks[i,] = peaks_list$positive_peak[[i]]
+}
+
+print(colMeans(negative_peaks))
+print(colMeans(positive_peaks))
+```
+
+
+```{r}
+peaks[[1]]$negative_peak[[100]]
+peaks[[1]]$positive_peak[[1]]
+```
+
+
+```{r}
+for (i in 1:num_exps) {
+ print(summary(peaks[[i]]$count))
+}
+```
+
+```{r}
+which(peaks[[6]]$count[,1]==2)
+```
+
