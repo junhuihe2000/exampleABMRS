@@ -1,0 +1,83 @@
+---
+title: "Summary Output"
+author: "Junhui He"
+date: "`r Sys.Date()`"
+format: html
+---
+
+# Summary of Curve Fitting Results
+
+```{r}
+# Concatenate curve_fitting outputs and compute mean/sd by scenario and method
+
+# Paths to saved arrays from the Slurm runs
+out_dir <- "output/curve_fitting"
+table_dir <- "tables/curve_fitting"
+if(!dir.exists(table_dir)) {
+    dir.create(table_dir, recursive = TRUE)
+}
+mse_files <- list.files(out_dir, pattern = "^curve_mse_raw_job-\\d+\\.rds$", full.names = TRUE)
+censor_files <- list.files(out_dir, pattern = "^curve_mse_censor_raw_job-\\d+\\.rds$", full.names = TRUE)
+
+stopifnot(length(mse_files) > 0, length(censor_files) > 0)
+
+array_to_df <- function(files, metric) {
+	dfs <- lapply(files, function(f) {
+		arr <- readRDS(f)
+		dn <- dimnames(arr)
+		grid <- expand.grid(
+			row = dn[[1]],
+			method = dn[[2]],
+			rep = seq_len(dim(arr)[3]),
+			stringsAsFactors = FALSE
+		)
+		grid$value <- as.vector(arr)
+		grid$file <- basename(f)
+		grid$metric <- metric
+		grid
+	})
+	do.call(rbind, dfs)
+}
+
+summarize_metric <- function(df) {
+	agg <- aggregate(value ~ row + method, data = df, FUN = function(x) c(mean = mean(x, na.rm = TRUE), sd = sd(x, na.rm = TRUE)))
+	res <- cbind(agg[c("row", "method")], agg$value)
+
+	# Parse row label: "Case 1-200" -> case and training size
+	parts <- strsplit(res$row, "-", fixed = TRUE)
+	res$case <- vapply(parts, `[`, "", 1)
+	res$n_train <- as.integer(vapply(parts, `[`, "", 2))
+
+	# Ensure numeric and round to 3 decimal places
+	res$mean <- round(as.numeric(res[["mean"]]), 3)
+	res$sd   <- round(as.numeric(res[["sd"]]), 3)
+
+	res <- res[, c("case", "n_train", "method", "mean", "sd")]
+	res[order(res$case, res$n_train, res$method), ]
+}
+
+mse_df <- array_to_df(mse_files, metric = "mse")
+censor_df <- array_to_df(censor_files, metric = "censor_mse")
+
+mse_summary <- summarize_metric(mse_df)
+censor_summary <- summarize_metric(censor_df)
+
+# --- write LaTeX tables to files ---
+mse_tex <- knitr::kable(mse_summary, format = "latex", booktabs = TRUE, caption = "Mean and SD of MSE across all curve_fitting experiments")
+write.csv(mse_summary, file = file.path(table_dir, "mse_summary.csv"), row.names = FALSE)
+
+censor_tex <- knitr::kable(censor_summary, format = "latex", booktabs = TRUE, caption = "Mean and SD of censored MSE (trimmed) across all curve_fitting experiments")
+write.csv(censor_summary, file = file.path(table_dir, "censor_mse_summary.csv"), row.names = FALSE)
+
+# Print LaTeX to the document as-is (useful when rendering to PDF)
+cat(mse_tex, sep = "\n")
+cat(censor_tex, sep = "\n")
+```
+
+```{r}
+knitr::kable(mse_summary, caption = "Mean and SD of MSE across all curve_fitting experiments")
+```
+
+```{r}
+knitr::kable(censor_summary, caption = "Mean and SD of censored MSE (trimmed) across all curve_fitting experiments")
+```

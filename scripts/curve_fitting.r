@@ -94,8 +94,8 @@ for (k in seq_len(rep_count)) {
       y_obs <- y_train + rnorm(m_train, 0, noises[[i]])
       y_new <- fs[[i]](x_new)
 
-      # ABMRS gamma = 0.5
-      ebars_1 <- ebars(x_train, y_obs, gamma = 0.5, times = 1, intercept = TRUE)
+      # ABMRS gamma = 0.8
+      ebars_1 <- ebars(x_train, y_obs, gamma = 0.8, times = 2, intercept = TRUE)
       ebars_1$rjmcmc(burns = 5000, steps = 5000)
       pred_1 <- ebars_1$predict(x_new)
       y_ebars_1 <- rowMeans(pred_1)
@@ -103,15 +103,15 @@ for (k in seq_len(rep_count)) {
       censor_mse_array[row_idx, "ABMRS-1", k] <- mean(sort((y_new - y_ebars_1)^2)[round(p * m_test):round((1 - p) * m_test)])
 
       # ABMRS gamma = 1
-      ebars_2 <- ebars(x_train, y_obs, gamma = 1, times = 3, intercept = TRUE)
+      ebars_2 <- ebars(x_train, y_obs, gamma = 1, times = 2, intercept = TRUE)
       ebars_2$rjmcmc(burns = 5000, steps = 5000)
       pred_2 <- ebars_2$predict(x_new)
       y_ebars_2 <- rowMeans(pred_2)
       mse_array[row_idx, "ABMRS-2", k] <- mean((y_new - y_ebars_2)^2)
       censor_mse_array[row_idx, "ABMRS-2", k] <- mean(sort((y_new - y_ebars_2)^2)[round(p * m_test):round((1 - p) * m_test)])
 
-      # ABMRS gamma = 1.5
-      ebars_3 <- ebars(x_train, y_obs, gamma = 1.5, times = 3, intercept = TRUE)
+      # ABMRS gamma = 1.2
+      ebars_3 <- ebars(x_train, y_obs, gamma = 1.2, times = 2, intercept = TRUE)
       ebars_3$rjmcmc(burns = 5000, steps = 5000)
       pred_3 <- ebars_3$predict(x_new)
       y_ebars_3 <- rowMeans(pred_3)
