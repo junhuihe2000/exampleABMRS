@@ -13,6 +13,12 @@
 
 module load R/4.4.0  # Load the R module if needed
 
+# include site library and your home library
+export R_LIBS_BASE="/sw/pkgs/arc/stacks/gcc/13.2.0/R/4.4.0/lib64/R/library"   # use the path you saw in step 1
+export R_LIBS_SITE="/sw/pkgs/arc/stacks/gcc/13.2.0/Rtidyverse/4.4.0/2024-05-11"   # use the path you saw in step 1
+export R_LIBS_USER="/home/hejunhui/R/x86_64-pc-linux-gnu-library/4.4"                           # your personal installs
+export R_LIBS="$R_LIBS_USER:$R_LIBS_SITE:$R_LIBS_BASE"
+
 SCRIPT_PATH="/home/hejunhui/R/ABMRS/scripts/curve_fitting.r"  # Path to the R script
 
 # Adjust these if you want a different number of replicates per array task
