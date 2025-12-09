@@ -1,12 +1,8 @@
----
-title: "exampleABMRS"
-author: "Junhui He"
-output: github_document
----
+Junhui He, Department of Mathematical Sciences, Tsinghua University
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# exampleEBARS
+# exampleABMRS
 
 <!-- badges: start -->
 <!-- badges: end -->

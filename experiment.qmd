@@ -11,5 +11,11 @@ library(devtools)
 ```
 
 ```{r}
-build_readme()
+m_trains <- c(30, 100)
+cases <- c("Case 1", "Case 2", "Case 3")
+methods <- c("ABMRS-1", "ABMRS-2", "ABMRS-3", "BARS", "Smooth Spline", "Gaussian Process")
+mse_array <- array(NA_real_, dim = c(2 * length(cases), length(methods), 5), dimnames = list(paste(rep(cases, times = length(m_trains)), "-", rep(m_trains, each = length(cases))), methods, NULL))
+
+mse_array[1, "Smooth Spline", ]
+paste(rep(cases, times = length(m_trains)), rep(m_trains, each = length(cases)), sep = "-")
 ```
