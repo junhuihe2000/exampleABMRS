@@ -1,5 +1,5 @@
 ---
-title: "Curve Spline Plot"
+title: "Curve Spline Regression Plot"
 author: "He Junhui"
 date: "`r Sys.Date()`"
 output: html_document
