@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=curve_fitting
+#SBATCH --job-name=surface_fitting
 #SBATCH --account=jiankang1
 #SBATCH --partition=standard
 #SBATCH --time=10:00:00
@@ -19,12 +19,12 @@ export R_LIBS_SITE="/sw/pkgs/arc/stacks/gcc/13.2.0/Rtidyverse/4.4.0/2024-05-11" 
 export R_LIBS_USER="/home/hejunhui/R/x86_64-pc-linux-gnu-library/4.4"                           # your personal installs
 export R_LIBS="$R_LIBS_USER:$R_LIBS_SITE:$R_LIBS_BASE"
 
-SCRIPT_PATH="/home/hejunhui/R/ABMRS/scripts/curve_fitting.r"  # Path to the R script
+SCRIPT_PATH="/home/hejunhui/R/ABMRS/scripts/surface_fitting.r"  # Path to the R script
 
 # Adjust these if you want a different number of replicates per array task
 REPS_PER_TASK=${REPS_PER_TASK:-5}
 
-echo "Starting curve_fitting task ${SLURM_ARRAY_TASK_ID} with ${REPS_PER_TASK} replicates"
+echo "Starting surface_fitting task ${SLURM_ARRAY_TASK_ID} with ${REPS_PER_TASK} replicates"
 
 srun Rscript $SCRIPT_PATH ${SLURM_ARRAY_TASK_ID} ${REPS_PER_TASK}
 
