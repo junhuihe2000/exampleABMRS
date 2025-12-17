@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 # load package
-library(EBARS)
+library(ABMRS)
 ```
 
 ```{r}
@@ -48,96 +48,125 @@ m = 1000
 x = cbind(runif(m), runif(m))
 y = f1(x)
 y_obs = y + rnorm(m, 0, 1)
+xmin = c(0,0); xmax = c(1,1)
 ```
 
 ```{r}
-# run surface EBARS
-my_binebars = binebars(x, y_obs, gamma = 1, n_1 = 1000, n_2 = 1000, degree_1 = 1, degree_2 = 1)
-my_binebars$mcmc(burns = 500, steps = 500)
+# run surface ABMRS
+my_mebars = mebars(x, y_obs, xmin = xmin, xmax = xmax, ks = c(5,5), times = c(2,2), degrees = c(1,1))
+my_mebars$rjmcmc(burns = 20000, steps = 20000)
 ```
 
 ```{r}
-knots = my_binebars$samples()
-l = length(knots$xi_1)
+knots = my_mebars$knots()
+xis_1 = sapply(knots, function(k) {k[[1]]})
+xis_2 = sapply(knots, function(k) {k[[2]]})
+xi_1 = rowMeans(xis_1)
+xi_2 = rowMeans(xis_2)
+
+xis = as.matrix(expand.grid(xi_1, xi_2))
+is_peak = array(NA, c(nrow(xis), 2))
+for (j in 1:nrow(xis)) {
+  xi = xis[j, ]
+  x_neigh = as.matrix(expand.grid(seq(xi[1]-0.02, xi[1]+0.02, 0.01), 
+                        seq(xi[2]-0.02, xi[2]+0.02, 0.01)))
+  pred = my_mebars$predict(rbind(xi, x_neigh))
+  y_hat = rowMeans(pred)
+  
+  is_peak[j, 1] = y_hat[1] == min(y_hat)
+  is_peak[j, 2] = y_hat[1] == max(y_hat)
+}
+
+peak_df = data.frame(xis, is_peak)
+colnames(peak_df) = c("x_1", "x_2", "min", "max")
+```
+
+```{r}
+# run surface ABMRS
+my_mebars = mebars(x, y_obs, xmin = xmin, xmax = xmax, gamma = 1, times = c(2,2), degrees = c(1,1))
+my_mebars$rjmcmc(burns = 20000, steps = 20000)
+```
+
+```{r}
+knots = my_mebars$knots()
+l = length(knots)
 
 peak_samples = list()
 
 for (i in 1:l) {
-  xi_1 = knots$xi_1[[i]]; xi_2 = knots$xi_2[[i]]
-  # fit s linear spline regression
-  z = tensor_spline(x, xi_1, xi_2, degree_1 = 1, degree_2 = 1, intercept_1 = TRUE, intercept_2 = TRUE)
+  xi_1 = knots[[i]][[1]]; xi_2 = knots[[i]][[2]]
+  # fit linear spline regression
+  z = tensor_spline(x, xis = list(xi_1, xi_2), degrees = c(1,1), intercepts = c(TRUE,TRUE), xmin = xmin, xmax = xmax)
   reg_df = data.frame(z, y = y_obs)
   lm_model = lm(y ~ ., data = reg_df)
   
   xis = as.matrix(expand.grid(xi_1, xi_2))
   is_peak = array(NA, c(nrow(xis), 2))
+  y_pred = rep(NA, nrow(xis))
   for (j in 1:nrow(xis)) {
     xi = xis[j, ]
     x_neigh = as.matrix(expand.grid(seq(xi[1]-0.02, xi[1]+0.02, 0.01), 
                           seq(xi[2]-0.02, xi[2]+0.02, 0.01)))
-    z_hat = tensor_spline(rbind(xi, x_neigh), xi_1, xi_2, degree_1 = 1, degree_2 = 1, intercept_1 = TRUE, intercept_2 = TRUE)
+    z_hat = tensor_spline(rbind(xi, x_neigh), xis = list(xi_1, xi_2), degrees = c(1,1), intercepts = c(TRUE,TRUE), xmin = xmin, xmax = xmax)
     y_hat = predict(lm_model, data.frame(z_hat))
     
     is_peak[j, 1] = y_hat[1] == min(y_hat)
     is_peak[j, 2] = y_hat[1] == max(y_hat)
+    y_pred[j] = y_hat[1]
   }
   
-  peak_df = data.frame(xis, is_peak)
-  colnames(peak_df) = c("x_1", "x_2", "min", "max")
+  peak_df = data.frame(xis, is_peak, y_pred)
+  colnames(peak_df) = c("x_1", "x_2", "min", "max", "y_hat")
   
   peak_samples[[i]] = peak_df
 }
 ```
 
 ```{r}
-p_1 = rbind(c(0.2, 0.3)); p_2 = rbind(c(0.7, 0.8))
-detections = array(NA, c(l, 2))
-delta = 0.1
-peak_points = list("negative" = array(NA, c(l, 2)), "positive" = array(NA, c(l, 2)))
+# peak points
+p_1 = c(0.286, 0.286); p_2 = c(0.714, 0.714)
+
+neg_peak_points = list(); pos_peak_points = list()
 peak_count = array(NA, c(l, 2))
-peak_distance = array(NA, c(l, 2))
 
 for (i in 1:l) {
   peak_df = peak_samples[[i]]
   # negative peak
-  neg_peak = as.matrix(peak_df[peak_df[,3]==1, 1:2])
-  peak_points$negative[i,] = neg_peak
+  neg_peak = as.matrix(peak_df[peak_df[,3]==1, c(1:2,5)])
+  neg_peak_points[[i]] = neg_peak
   peak_count[i, 1] = nrow(neg_peak)
-  peak_distance[i, 1] = sqrt(sum((neg_peak - p_1)^2))
-  detections[i, 1] = any(sqrt(rowSums((neg_peak - p_1)^2)) < delta)
+  
   # positive peak
-  pos_peak = as.matrix(peak_df[peak_df[,4]==1, 1:2])
-  peak_points$positive[i,] = pos_peak
+  pos_peak = as.matrix(peak_df[peak_df[,4]==1, c(1:2,5)])
+  pos_peak_points[[i]] = pos_peak
   peak_count[i, 2] = nrow(pos_peak)
-  peak_distance[i, 2] = sqrt(sum((pos_peak - p_2)^2))
-  detections[i, 2] = any(sqrt(rowSums((pos_peak - p_2)^2)) < delta)
 }
 ```
 
 ```{r}
-phat_1 = colMeans(peak_points$negative)
-sqrt(sum((phat_1 - p_1)^2))
-phat_2 = colMeans(peak_points$positive)
-sqrt(sum((phat_2 - p_2)^2))
+negative_peaks = c(); positive_peaks = c()
+for (i in 1:l) {
+  if (peak_count[i,1]>0) {
+    neg_peak = neg_peak_points[[i]]
+    negative_peaks = rbind(negative_peaks, neg_peak[which.min(neg_peak[,3]),])
+  }
+  if (peak_count[i,2]>0) {
+    pos_peak = pos_peak_points[[i]]
+    positive_peaks = rbind(positive_peaks, pos_peak[which.max(pos_peak[,3]),])
+  }
+}
 
-peak_distance[l,]
+phat_1 = colMeans(negative_peaks[,1:2])
+phat_2 = colMeans(positive_peaks[,1:2])
+d_1 = sqrt(sum((phat_1 - p_1)^2))
+d_2 = sqrt(sum((phat_2 - p_2)^2))
+cat("Negative peak distance:", d_1, "\n")
+cat("Positive peak distance:", d_2, "\n")
 ```
 
 
-```{r}
-summary(peak_count)
-```
 
-```{r}
-summary(peak_distance)
-```
-
-
-```{r}
-summary(detections)
-```
-
-
+# TODO
 
 ```{r}
 set.seed(1234)
@@ -224,35 +253,3 @@ print(t_2 - t_1)
 
 t_end = Sys.time()
 ```
-
-```{r}
-peaks_list = peaks[[1]]
-print(summary(peaks_list$count))
-
-negative_peaks = array(NA, c(500, 2)); positive_peaks = array(NA, c(500, 2))
-for (i in 1:500) {
-  negative_peaks[i,] = peaks_list$negative_peak[[i]]
-  positive_peaks[i,] = peaks_list$positive_peak[[i]]
-}
-
-print(colMeans(negative_peaks))
-print(colMeans(positive_peaks))
-```
-
-
-```{r}
-peaks[[1]]$negative_peak[[100]]
-peaks[[1]]$positive_peak[[1]]
-```
-
-
-```{r}
-for (i in 1:num_exps) {
- print(summary(peaks[[i]]$count))
-}
-```
-
-```{r}
-which(peaks[[6]]$count[,1]==2)
-```
-

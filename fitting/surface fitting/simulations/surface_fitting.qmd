@@ -15,8 +15,6 @@ library(BASS)
 library(GauPro)
 library(mgcv)
 library(plot3D)
-
-set.seed(1234)
 ```
 
 # Function for ABMRS
@@ -31,7 +29,7 @@ f2 = function(x) {
   xi_1 = c(0.2,0.5)
   xi_2 = c(0.4,0.4,0.4,0.4,0.7)
   beta = c(-1.21, 0.28, 1.08, -2.35, 0.43, 0.51, -0.57, -0.55, -0.56, -0.89, -0.48, -1.00, -0.78,  0.06,  0.96, -0.11, -0.51, -0.91, -0.84,  2.42,  0.13, -0.49, -0.44,  0.46, -0.69, -1.45,  0.57, -1.02, -0.02, -0.94,  1.10, -0.48, -0.71, -0.50, -1.63, -1.17, -2.18, -1.34, -0.29, -0.47)
-  B = tensor_spline(x,list(xi_1,xi_2), c(3,3), c(FALSE,FALSE))
+  B = tensor_spline(x,list(xi_1,xi_2), c(3,3), c(FALSE,FALSE), c(0 , 0), c(1, 1))
   return(c(20*B%*%cbind(beta)))
 }
 
@@ -39,7 +37,7 @@ f3 = function(x) {
   xi_1 = c(0.2,0.2,0.2,0.2,0.6)
   xi_2 = c(0.5,0.5,0.5,0.5,0.7)
   beta = c(0.83, -0.28, -0.36,  0.09,  2.25,  0.83,  1.31,  2.50,  1.17, -0.43, -1.00, -1.11, -0.06,  1.17,  1.05,  0.06, -0.74,  0.93,  1.67,  0.56, -0.75,  1.26, 0.04,  0.19,  0.46, -0.43,  0.02,  0.70,  0.97, -0.62, -0.86,  0.07, -1.05, -2.75, -1.13, -0.86,  1.56,  1.02,  1.04, -1.12, -1.07,  0.97,  0.17, -0.90,  0.16, -0.50, -0.97, -0.11, 1.09, -1.21, -1.77, -0.49,  0.32,  1.46,  1.54, -0.34, -1.08, -1.49, -0.25, -0.12, -0.65,  0.31,  0.12, -0.84)
-  B = tensor_spline(x,list(xi_1,xi_2), c(3,3), c(FALSE,FALSE))
+  B = tensor_spline(x,list(xi_1,xi_2), c(3,3), c(FALSE,FALSE), c(0 , 0), c(1, 1))
   return(c(20*B%*%cbind(beta)))
 }
 ```
@@ -52,7 +50,7 @@ noises = c(0.8,2,2)
 Plot True Surface
 
 ```{r}
-pdf(file=file.path("figures/surface_fitting","surface_truth.pdf"), width=12, height=4)
+pdf(file=file.path("/Users/hjh/PhD/ABMRS/exampleABMRS/figures/surface_fitting","surface_truth.pdf"), width=12, height=4)
 par(mfrow=c(1,3))
 par(mar=c(0,1,0,1))
 grid = seq(0,1,by=0.01)
@@ -75,11 +73,14 @@ Run simulation
 
 ```{r}
 time.start = Sys.time()
+set.seed(1234)
 # generate training data
 m_train = 1000
 x_train = cbind(runif(m_train,0,1), runif(m_train,0,1))
 m_test = 500
 x_test = cbind(runif(m_test,0,1), runif(m_test,0,1))
+xmin = c(0, 0)
+xmax = c(1, 1)
 
 p = 0.025 # censoring proportion
 level = 0.95 # credible level
@@ -104,7 +105,7 @@ for(i in c(1:3)) {
   y_test = f(x_test)
 
   # ABMRS with gamma = 0.8
-  mebars_1 = mebars(x_train, y_obs, gamma = 0.8, times = c(2,2))
+  mebars_1 = mebars(x_train, y_obs, xmin, xmax, gamma = 0.8, times = c(2,2))
   mebars_1$rjmcmc(burns=20000,steps=20000)
   pred_1 = mebars_1$predict(x_test)
   y_mebars_1 = rowMeans(pred_1)
@@ -117,7 +118,7 @@ for(i in c(1:3)) {
 
 
   # ABMRS with gamma = 1
-  mebars_2 = mebars(x_train, y_obs, gamma = 1, times = c(2,2))
+  mebars_2 = mebars(x_train, y_obs, xmin, xmax, gamma = 1, times = c(2,2))
   mebars_2$rjmcmc(burns=20000,steps=20000)
   pred_2 = mebars_2$predict(x_test)
   y_mebars_2 = rowMeans(pred_2)
@@ -129,7 +130,7 @@ for(i in c(1:3)) {
   bandwidth_array[i,"ABMRS (gamma=1)"] = mean(upper_bound_2 - lower_bound_2)
 
   # ABMRS with gamma = 1.2
-  mebars_3 = mebars(x_train, y_obs, gamma = 1.2, times = c(2,2))
+  mebars_3 = mebars(x_train, y_obs, xmin, xmax, gamma = 1.2, times = c(2,2))
   mebars_3$rjmcmc(burns=20000,steps=20000)
   pred_3 = mebars_3$predict(x_test)
   y_mebars_3 = rowMeans(pred_3)
@@ -203,6 +204,8 @@ set.seed(1234)
 # generate training data
 m_train = 500
 x_train = cbind(runif(m_train,0,1), runif(m_train,0,1))
+xmin = c(0, 0)
+xmax = c(1, 1)
 
 # speed/quality knobs
 grid_step <- 0.01   # was 0.01; larger = faster
@@ -214,7 +217,7 @@ grid_xy <- expand.grid(x1 = grid, x2 = grid)
 grid_mat <- as.matrix(grid_xy)
 n_grid <- length(grid)
 
-pdf(file = file.path("figures/surface_fitting","surface_fitting.pdf"), width = 16, height = 9)
+pdf(file = file.path("/Users/hjh/PhD/ABMRS/exampleABMRS/figures/surface_fitting","surface_fitting.pdf"), width = 16, height = 9)
 par(mfrow=c(3,8))
 par(mar=c(0,0,0,0))
 for(i in c(1:3)) {
@@ -225,19 +228,19 @@ for(i in c(1:3)) {
   z_true <- matrix(f(grid_mat), nrow = n_grid, ncol = n_grid)
   contour(x=grid,y=grid,z=z_true,axes = FALSE,frame.plot =TRUE)
   # ABMRS with gamma = 0.8
-  mebars_1 = mebars(x_train, y_obs, gamma = 0.8, times = c(2,2))
+  mebars_1 = mebars(x_train, y_obs, xmin, xmax, gamma = 0.8, times = c(2,2))
   mebars_1$rjmcmc(burns=burns_plot,steps=steps_plot)
   pred_1_grid <- mebars_1$predict(grid_mat)
   z_1 <- matrix(rowMeans(pred_1_grid), nrow = n_grid, ncol = n_grid)
   contour(x=grid,y=grid,z=z_1,axes = FALSE,frame.plot =TRUE)
   # ABMRS with gamma = 1.0
-  mebars_2 = mebars(x_train, y_obs, gamma = 1.0, times = c(2,2))
+  mebars_2 = mebars(x_train, y_obs, xmin, xmax, gamma = 1.0, times = c(2,2))
   mebars_2$rjmcmc(burns=burns_plot,steps=steps_plot)
   pred_2_grid <- mebars_2$predict(grid_mat)
   z_2 <- matrix(rowMeans(pred_2_grid), nrow = n_grid, ncol = n_grid)
   contour(x=grid,y=grid,z=z_2,axes = FALSE,frame.plot =TRUE)
   # ABMRS with gamma = 1.2
-  mebars_3 = mebars(x_train, y_obs, gamma = 1.2, times = c(2,2))
+  mebars_3 = mebars(x_train, y_obs, xmin, xmax, gamma = 1.2, times = c(2,2))
   mebars_3$rjmcmc(burns=burns_plot,steps=steps_plot)
   pred_3_grid <- mebars_3$predict(grid_mat)
   z_3 <- matrix(rowMeans(pred_3_grid), nrow = n_grid, ncol = n_grid)
@@ -313,10 +316,9 @@ time.start = Sys.time()
 m_train = 250
 x_train = cbind(runif(m_train,0,1), runif(m_train,0,1))
 m_test = 250
-# x_test = cbind(runif(m_test,0,1), runif(m_test,0,1))
-xmin = apply(x_train, 2, min)
-xmax = apply(x_train, 2, max)
-x_test = cbind(runif(m_test, xmin[1], xmax[1]), runif(m_test, xmin[2], xmax[2]))
+x_test = cbind(runif(m_test,0,1), runif(m_test,0,1))
+xmin = c(0, 0)
+xmax = c(1, 1)
 
 p = 0.025 # censoring proportion
 level = 0.95 # credible level
@@ -341,7 +343,7 @@ for(i in c(1:length(cases))) {
   y_test = f(x_test)
 
   # ABMRS with gamma = 0.8
-  mebars_1 = mebars(x_train, y_obs, gamma = 0.8, times = c(2,2))
+  mebars_1 = mebars(x_train, y_obs, xmin, xmax, gamma = 0.8, times = c(2,2))
   mebars_1$rjmcmc(burns=20000,steps=20000)
   pred_1 = mebars_1$predict(x_test)
   y_mebars_1 = rowMeans(pred_1)
@@ -354,7 +356,7 @@ for(i in c(1:length(cases))) {
 
 
   # ABMRS with gamma = 1
-  mebars_2 = mebars(x_train, y_obs, gamma = 1, times = c(2,2))
+  mebars_2 = mebars(x_train, y_obs, xmin, xmax, gamma = 1, times = c(2,2))
   mebars_2$rjmcmc(burns=20000,steps=20000)
   pred_2 = mebars_2$predict(x_test)
   y_mebars_2 = rowMeans(pred_2)
@@ -366,7 +368,7 @@ for(i in c(1:length(cases))) {
   bandwidth_array[i,"ABMRS (gamma=1)"] = mean(upper_bound_2 - lower_bound_2)
 
   # ABMRS with gamma = 1.2
-  mebars_3 = mebars(x_train, y_obs, gamma = 1.2, times = c(2,2))
+  mebars_3 = mebars(x_train, y_obs, xmin, xmax, gamma = 1.2, times = c(2,2))
   mebars_3$rjmcmc(burns=20000,steps=20000)
   pred_3 = mebars_3$predict(x_test)
   y_mebars_3 = rowMeans(pred_3)
@@ -430,4 +432,45 @@ print(mse_array)
 print(censor_mse_array)
 print(cov_array)
 print(bandwidth_array)
+```
+
+```{r}
+# debug for mebars
+# training data
+pred_train_1 = mebars_1$predict(x_train)
+y_train_1 = rowMeans(pred_train_1)
+y_mebars_median_1 = apply(pred_1, 1, median)
+mean((y_train_1 - y_train)^2)
+mean((y_test - y_mebars_1)^2)
+mean((y_test - y_mebars_median_1)^2)
+y_mebars_median_2 = apply(pred_2, 1, median)
+mean((y_test - y_mebars_median_2)^2)
+summary((y_test - y_mebars_1)^2)
+quantile((y_test - y_mebars_1)^2, probs = seq(0,1,by=0.01))
+sort((y_test - y_mebars_1)^2)
+order = order((y_test - y_mebars_1)^2, decreasing = TRUE)
+x_train_min = apply(x_train, 2, min)
+x_train_max = apply(x_train, 2, max)
+range_check = apply(x_test, 1, function(x) all(x >= x_train_min & x <= x_train_max))
+which(!range_check)
+# bad points located at the edges
+x_test[order[1:5], ]
+summary(pred_1[order[10], ])
+y_test[order[1:10]]
+y_mebars_1[order[1]]
+y_test[order[1]]
+pred_order = order(abs(pred_1[order[1], ]), decreasing = TRUE)
+sort(abs(pred_1[order[1], ]), decreasing = TRUE)[1:10]
+knots = mebars_1$knots()
+coefs = mebars_1$coefs()
+nugs = mebars_1$resids()
+
+knots[order(abs(pred_1[order[1], ]), decreasing = TRUE)[1:5]]
+coefs[order(abs(pred_1[order[1], ]), decreasing = TRUE)[1:5]]
+nugs[order(abs(pred_1[order[1], ]), decreasing = TRUE)[1:5]] # noise variance estimation is reasonable
+
+tensor_spline(rbind(x_test[order[1:50],]), knots[[pred_order[1]]], c(3,3), c(TRUE,TRUE), c(0,0), c(1,1))[,1:5]
+tensor_spline(rbind(x_test[order[(m_test-50):m_test],]), knots[[pred_order[1]]], c(3,3), c(TRUE,TRUE), c(0,0), c(1,1))[,1:5]
+coefs[[pred_order[1]]]
+sum(tensor_spline(rbind(x_test[,]), knots[[pred_order[1]]], c(3,3), c(TRUE,TRUE), c(0,0), c(1,1))[,10] > 0)
 ```

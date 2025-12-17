@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.26">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="He Junhui">
+<meta name="dcterms.date" content="2025-12-14">
+
+<title>Surface Spline Regression Plot</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="surface_fitting_files/libs/clipboard/clipboard.min.js"></script>
+<script src="surface_fitting_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="surface_fitting_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="surface_fitting_files/libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="surface_fitting_files/libs/quarto-html/popper.min.js"></script>
+<script src="surface_fitting_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="surface_fitting_files/libs/quarto-html/anchor.min.js"></script>
+<link href="surface_fitting_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="surface_fitting_files/libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="surface_fitting_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="surface_fitting_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="surface_fitting_files/libs/bootstrap/bootstrap-d6a003b94517c951b2d65075d42fb01b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Surface Spline Regression Plot</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>He Junhui </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">December 14, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="function-for-abmrs" class="level1">
+<h1>Function for ABMRS</h1>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>f1 <span class="ot">=</span> <span class="cf">function</span>(x) {</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="sc">-</span><span class="dv">40</span><span class="sc">*</span>(<span class="fu">exp</span>(<span class="sc">-</span>(x[,<span class="dv">1</span>]<span class="sc">-</span><span class="fl">0.3</span>)<span class="sc">^</span><span class="dv">2</span><span class="sc">/</span><span class="fl">0.1</span><span class="sc">-</span>(x[,<span class="dv">2</span>]<span class="sc">-</span><span class="fl">0.3</span>)<span class="sc">^</span><span class="dv">2</span><span class="sc">/</span><span class="fl">0.1</span>)<span class="sc">-</span><span class="fu">exp</span>(<span class="sc">-</span>(x[,<span class="dv">1</span>]<span class="sc">-</span><span class="fl">0.7</span>)<span class="sc">^</span><span class="dv">2</span><span class="sc">/</span><span class="fl">0.1</span><span class="sc">-</span>(x[,<span class="dv">2</span>]<span class="sc">-</span><span class="fl">0.7</span>)<span class="sc">^</span><span class="dv">2</span><span class="sc">/</span><span class="fl">0.1</span>)))</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>f2 <span class="ot">=</span> <span class="cf">function</span>(x) {</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  xi_1 <span class="ot">=</span> <span class="fu">c</span>(<span class="fl">0.2</span>,<span class="fl">0.5</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  xi_2 <span class="ot">=</span> <span class="fu">c</span>(<span class="fl">0.4</span>,<span class="fl">0.4</span>,<span class="fl">0.4</span>,<span class="fl">0.4</span>,<span class="fl">0.7</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  beta <span class="ot">=</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">1.21</span>, <span class="fl">0.28</span>, <span class="fl">1.08</span>, <span class="sc">-</span><span class="fl">2.35</span>, <span class="fl">0.43</span>, <span class="fl">0.51</span>, <span class="sc">-</span><span class="fl">0.57</span>, <span class="sc">-</span><span class="fl">0.55</span>, <span class="sc">-</span><span class="fl">0.56</span>, <span class="sc">-</span><span class="fl">0.89</span>, <span class="sc">-</span><span class="fl">0.48</span>, <span class="sc">-</span><span class="fl">1.00</span>, <span class="sc">-</span><span class="fl">0.78</span>,  <span class="fl">0.06</span>,  <span class="fl">0.96</span>, <span class="sc">-</span><span class="fl">0.11</span>, <span class="sc">-</span><span class="fl">0.51</span>, <span class="sc">-</span><span class="fl">0.91</span>, <span class="sc">-</span><span class="fl">0.84</span>,  <span class="fl">2.42</span>,  <span class="fl">0.13</span>, <span class="sc">-</span><span class="fl">0.49</span>, <span class="sc">-</span><span class="fl">0.44</span>,  <span class="fl">0.46</span>, <span class="sc">-</span><span class="fl">0.69</span>, <span class="sc">-</span><span class="fl">1.45</span>,  <span class="fl">0.57</span>, <span class="sc">-</span><span class="fl">1.02</span>, <span class="sc">-</span><span class="fl">0.02</span>, <span class="sc">-</span><span class="fl">0.94</span>,  <span class="fl">1.10</span>, <span class="sc">-</span><span class="fl">0.48</span>, <span class="sc">-</span><span class="fl">0.71</span>, <span class="sc">-</span><span class="fl">0.50</span>, <span class="sc">-</span><span class="fl">1.63</span>, <span class="sc">-</span><span class="fl">1.17</span>, <span class="sc">-</span><span class="fl">2.18</span>, <span class="sc">-</span><span class="fl">1.34</span>, <span class="sc">-</span><span class="fl">0.29</span>, <span class="sc">-</span><span class="fl">0.47</span>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  B <span class="ot">=</span> <span class="fu">tensor_spline</span>(x,<span class="fu">list</span>(xi_1,xi_2), <span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">3</span>), <span class="fu">c</span>(<span class="cn">FALSE</span>,<span class="cn">FALSE</span>), <span class="fu">c</span>(<span class="dv">0</span> , <span class="dv">0</span>), <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">c</span>(<span class="dv">20</span><span class="sc">*</span>B<span class="sc">%*%</span><span class="fu">cbind</span>(beta)))</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>f3 <span class="ot">=</span> <span class="cf">function</span>(x) {</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  xi_1 <span class="ot">=</span> <span class="fu">c</span>(<span class="fl">0.2</span>,<span class="fl">0.2</span>,<span class="fl">0.2</span>,<span class="fl">0.2</span>,<span class="fl">0.6</span>)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  xi_2 <span class="ot">=</span> <span class="fu">c</span>(<span class="fl">0.5</span>,<span class="fl">0.5</span>,<span class="fl">0.5</span>,<span class="fl">0.5</span>,<span class="fl">0.7</span>)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  beta <span class="ot">=</span> <span class="fu">c</span>(<span class="fl">0.83</span>, <span class="sc">-</span><span class="fl">0.28</span>, <span class="sc">-</span><span class="fl">0.36</span>,  <span class="fl">0.09</span>,  <span class="fl">2.25</span>,  <span class="fl">0.83</span>,  <span class="fl">1.31</span>,  <span class="fl">2.50</span>,  <span class="fl">1.17</span>, <span class="sc">-</span><span class="fl">0.43</span>, <span class="sc">-</span><span class="fl">1.00</span>, <span class="sc">-</span><span class="fl">1.11</span>, <span class="sc">-</span><span class="fl">0.06</span>,  <span class="fl">1.17</span>,  <span class="fl">1.05</span>,  <span class="fl">0.06</span>, <span class="sc">-</span><span class="fl">0.74</span>,  <span class="fl">0.93</span>,  <span class="fl">1.67</span>,  <span class="fl">0.56</span>, <span class="sc">-</span><span class="fl">0.75</span>,  <span class="fl">1.26</span>, <span class="fl">0.04</span>,  <span class="fl">0.19</span>,  <span class="fl">0.46</span>, <span class="sc">-</span><span class="fl">0.43</span>,  <span class="fl">0.02</span>,  <span class="fl">0.70</span>,  <span class="fl">0.97</span>, <span class="sc">-</span><span class="fl">0.62</span>, <span class="sc">-</span><span class="fl">0.86</span>,  <span class="fl">0.07</span>, <span class="sc">-</span><span class="fl">1.05</span>, <span class="sc">-</span><span class="fl">2.75</span>, <span class="sc">-</span><span class="fl">1.13</span>, <span class="sc">-</span><span class="fl">0.86</span>,  <span class="fl">1.56</span>,  <span class="fl">1.02</span>,  <span class="fl">1.04</span>, <span class="sc">-</span><span class="fl">1.12</span>, <span class="sc">-</span><span class="fl">1.07</span>,  <span class="fl">0.97</span>,  <span class="fl">0.17</span>, <span class="sc">-</span><span class="fl">0.90</span>,  <span class="fl">0.16</span>, <span class="sc">-</span><span class="fl">0.50</span>, <span class="sc">-</span><span class="fl">0.97</span>, <span class="sc">-</span><span class="fl">0.11</span>, <span class="fl">1.09</span>, <span class="sc">-</span><span class="fl">1.21</span>, <span class="sc">-</span><span class="fl">1.77</span>, <span class="sc">-</span><span class="fl">0.49</span>,  <span class="fl">0.32</span>,  <span class="fl">1.46</span>,  <span class="fl">1.54</span>, <span class="sc">-</span><span class="fl">0.34</span>, <span class="sc">-</span><span class="fl">1.08</span>, <span class="sc">-</span><span class="fl">1.49</span>, <span class="sc">-</span><span class="fl">0.25</span>, <span class="sc">-</span><span class="fl">0.12</span>, <span class="sc">-</span><span class="fl">0.65</span>,  <span class="fl">0.31</span>,  <span class="fl">0.12</span>, <span class="sc">-</span><span class="fl">0.84</span>)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  B <span class="ot">=</span> <span class="fu">tensor_spline</span>(x,<span class="fu">list</span>(xi_1,xi_2), <span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">3</span>), <span class="fu">c</span>(<span class="cn">FALSE</span>,<span class="cn">FALSE</span>), <span class="fu">c</span>(<span class="dv">0</span> , <span class="dv">0</span>), <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">c</span>(<span class="dv">20</span><span class="sc">*</span>B<span class="sc">%*%</span><span class="fu">cbind</span>(beta)))</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>fs <span class="ot">=</span> <span class="fu">list</span>(f1,f2,f3)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>noises <span class="ot">=</span> <span class="fu">c</span>(<span class="fl">0.8</span>,<span class="dv">2</span>,<span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Plot True Surface</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pdf</span>(<span class="at">file=</span><span class="fu">file.path</span>(<span class="st">"/Users/hjh/PhD/ABMRS/exampleABMRS/figures/surface_fitting"</span>,<span class="st">"surface_truth.pdf"</span>), <span class="at">width=</span><span class="dv">12</span>, <span class="at">height=</span><span class="dv">4</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>))</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>))</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="at">by=</span><span class="fl">0.01</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>x <span class="ot">=</span> <span class="fu">cbind</span>(<span class="fu">rep</span>(grid,<span class="at">each=</span><span class="fu">length</span>(grid)),<span class="fu">rep</span>(grid,<span class="at">times=</span><span class="fu">length</span>(grid)))</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>)) {</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  f <span class="ot">=</span> fs[[i]]</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scatter3D</span>(x[,<span class="dv">1</span>], x[,<span class="dv">2</span>], <span class="fu">f</span>(x),</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>          <span class="at">theta =</span> <span class="dv">20</span>, <span class="at">phi =</span> <span class="dv">20</span>,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>          <span class="at">pch =</span> <span class="dv">20</span>, <span class="at">box=</span><span class="cn">TRUE</span>, <span class="at">cex =</span> <span class="fl">0.4</span>, <span class="at">colkey =</span> <span class="cn">FALSE</span>, </span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>          <span class="at">border=</span><span class="st">"black"</span>, <span class="at">shade=</span><span class="fl">0.8</span>, </span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>          <span class="at">bty =</span> <span class="st">"g"</span>, <span class="at">axes =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>          <span class="at">main=</span><span class="st">""</span>)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="fu">dev.off</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>quartz_off_screen 
+                2 </code></pre>
+</div>
+</div>
+<p>Run simulation</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>time.start <span class="ot">=</span> <span class="fu">Sys.time</span>()</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># generate training data</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>m_train <span class="ot">=</span> <span class="dv">1000</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>x_train <span class="ot">=</span> <span class="fu">cbind</span>(<span class="fu">runif</span>(m_train,<span class="dv">0</span>,<span class="dv">1</span>), <span class="fu">runif</span>(m_train,<span class="dv">0</span>,<span class="dv">1</span>))</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>m_test <span class="ot">=</span> <span class="dv">500</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>x_test <span class="ot">=</span> <span class="fu">cbind</span>(<span class="fu">runif</span>(m_test,<span class="dv">0</span>,<span class="dv">1</span>), <span class="fu">runif</span>(m_test,<span class="dv">0</span>,<span class="dv">1</span>))</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>xmin <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>xmax <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>p <span class="ot">=</span> <span class="fl">0.025</span> <span class="co"># censoring proportion</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>level <span class="ot">=</span> <span class="fl">0.95</span> <span class="co"># credible level</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>upper_level <span class="ot">=</span> (<span class="dv">1</span> <span class="sc">+</span> level)<span class="sc">/</span><span class="dv">2</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>lower_level <span class="ot">=</span> (<span class="dv">1</span> <span class="sc">-</span> level)<span class="sc">/</span><span class="dv">2</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>cases <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"Case 1"</span>,<span class="st">"Case 2"</span>,<span class="st">"Case 3"</span>)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>methods <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"ABMRS (gamma=0.8)"</span>,<span class="st">"ABMRS (gamma=1)"</span>,<span class="st">"ABMRS (gamma=1.2)"</span>,<span class="st">"Thin Plate Spline"</span>,<span class="st">"Tensor Product Spline"</span>,<span class="st">"Gaussian Process"</span>, <span class="st">"BASS"</span>)</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>censor_mse_array <span class="ot">=</span> <span class="fu">array</span>(<span class="cn">NA</span>, <span class="at">dim =</span> <span class="fu">c</span>(<span class="fu">length</span>(cases), <span class="fu">length</span>(methods)), </span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>                        <span class="at">dimnames =</span> <span class="fu">list</span>(cases, methods))</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>mse_array <span class="ot">=</span> <span class="fu">array</span>(<span class="cn">NA</span>, <span class="at">dim =</span> <span class="fu">c</span>(<span class="fu">length</span>(cases), <span class="fu">length</span>(methods)), </span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>                  <span class="at">dimnames =</span> <span class="fu">list</span>(cases, methods))</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>cov_array <span class="ot">=</span> <span class="fu">array</span>(<span class="cn">NA</span>, <span class="at">dim =</span> <span class="fu">c</span>(<span class="fu">length</span>(cases), <span class="fu">length</span>(methods)), </span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>                   <span class="at">dimnames =</span> <span class="fu">list</span>(cases, methods))</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>bandwidth_array <span class="ot">=</span> <span class="fu">array</span>(<span class="cn">NA</span>, <span class="at">dim =</span> <span class="fu">c</span>(<span class="fu">length</span>(cases), <span class="fu">length</span>(methods)), </span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>                      <span class="at">dimnames =</span> <span class="fu">list</span>(cases, methods))</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>)) {</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">"Running"</span>, cases[i], <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>  f <span class="ot">=</span> fs[[i]]; noise <span class="ot">=</span> noises[i]</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>  y_train <span class="ot">=</span> <span class="fu">f</span>(x_train)</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>  y_obs <span class="ot">=</span> y_train <span class="sc">+</span> <span class="fu">rnorm</span>(m_train, <span class="dv">0</span>, noise)</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>  y_test <span class="ot">=</span> <span class="fu">f</span>(x_test)</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ABMRS with gamma = 0.8</span></span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>  mebars_1 <span class="ot">=</span> <span class="fu">mebars</span>(x_train, y_obs, xmin, xmax, <span class="at">gamma =</span> <span class="fl">0.8</span>, <span class="at">times =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">2</span>))</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>  mebars_1<span class="sc">$</span><span class="fu">rjmcmc</span>(<span class="at">burns=</span><span class="dv">20000</span>,<span class="at">steps=</span><span class="dv">20000</span>)</span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>  pred_1 <span class="ot">=</span> mebars_1<span class="sc">$</span><span class="fu">predict</span>(x_test)</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>  y_mebars_1 <span class="ot">=</span> <span class="fu">rowMeans</span>(pred_1)</span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>  mse_array[i,<span class="st">"ABMRS (gamma=0.8)"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_mebars_1 <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>  censor_mse_array[i,<span class="st">"ABMRS (gamma=0.8)"</span>] <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">sort</span>((y_mebars_1 <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)[<span class="fu">round</span>(p<span class="sc">*</span>m_test)<span class="sc">:</span><span class="fu">round</span>((<span class="dv">1</span><span class="sc">-</span>p)<span class="sc">*</span>m_test)])</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>  lower_bound_1 <span class="ot">=</span> <span class="fu">apply</span>(pred_1, <span class="dv">1</span>, quantile, <span class="at">probs =</span> lower_level)</span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>  upper_bound_1 <span class="ot">=</span> <span class="fu">apply</span>(pred_1, <span class="dv">1</span>, quantile, <span class="at">probs =</span> upper_level)</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>  cov_array[i,<span class="st">"ABMRS (gamma=0.8)"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_test <span class="sc">&gt;=</span> lower_bound_1) <span class="sc">&amp;</span> (y_test <span class="sc">&lt;=</span> upper_bound_1))</span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>  bandwidth_array[i,<span class="st">"ABMRS (gamma=0.8)"</span>] <span class="ot">=</span> <span class="fu">mean</span>(upper_bound_1 <span class="sc">-</span> lower_bound_1)</span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ABMRS with gamma = 1</span></span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>  mebars_2 <span class="ot">=</span> <span class="fu">mebars</span>(x_train, y_obs, xmin, xmax, <span class="at">gamma =</span> <span class="dv">1</span>, <span class="at">times =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">2</span>))</span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>  mebars_2<span class="sc">$</span><span class="fu">rjmcmc</span>(<span class="at">burns=</span><span class="dv">20000</span>,<span class="at">steps=</span><span class="dv">20000</span>)</span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>  pred_2 <span class="ot">=</span> mebars_2<span class="sc">$</span><span class="fu">predict</span>(x_test)</span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a>  y_mebars_2 <span class="ot">=</span> <span class="fu">rowMeans</span>(pred_2)</span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>  mse_array[i,<span class="st">"ABMRS (gamma=1)"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_mebars_2 <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a>  censor_mse_array[i,<span class="st">"ABMRS (gamma=1)"</span>] <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">sort</span>((y_mebars_2 <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)[<span class="fu">round</span>(p<span class="sc">*</span>m_test)<span class="sc">:</span><span class="fu">round</span>((<span class="dv">1</span><span class="sc">-</span>p)<span class="sc">*</span>m_test)])</span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>  lower_bound_2 <span class="ot">=</span> <span class="fu">apply</span>(pred_2, <span class="dv">1</span>, quantile, <span class="at">probs =</span> lower_level)</span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a>  upper_bound_2 <span class="ot">=</span> <span class="fu">apply</span>(pred_2, <span class="dv">1</span>, quantile, <span class="at">probs =</span> upper_level)</span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a>  cov_array[i,<span class="st">"ABMRS (gamma=1)"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_test <span class="sc">&gt;=</span> lower_bound_2) <span class="sc">&amp;</span> (y_test <span class="sc">&lt;=</span> upper_bound_2))</span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>  bandwidth_array[i,<span class="st">"ABMRS (gamma=1)"</span>] <span class="ot">=</span> <span class="fu">mean</span>(upper_bound_2 <span class="sc">-</span> lower_bound_2)</span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ABMRS with gamma = 1.2</span></span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a>  mebars_3 <span class="ot">=</span> <span class="fu">mebars</span>(x_train, y_obs, xmin, xmax, <span class="at">gamma =</span> <span class="fl">1.2</span>, <span class="at">times =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">2</span>))</span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a>  mebars_3<span class="sc">$</span><span class="fu">rjmcmc</span>(<span class="at">burns=</span><span class="dv">20000</span>,<span class="at">steps=</span><span class="dv">20000</span>)</span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a>  pred_3 <span class="ot">=</span> mebars_3<span class="sc">$</span><span class="fu">predict</span>(x_test)</span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a>  y_mebars_3 <span class="ot">=</span> <span class="fu">rowMeans</span>(pred_3)</span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a>  mse_array[i,<span class="st">"ABMRS (gamma=1.2)"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_mebars_3 <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a>  censor_mse_array[i,<span class="st">"ABMRS (gamma=1.2)"</span>] <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">sort</span>((y_mebars_3 <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)[<span class="fu">round</span>(p<span class="sc">*</span>m_test)<span class="sc">:</span><span class="fu">round</span>((<span class="dv">1</span><span class="sc">-</span>p)<span class="sc">*</span>m_test)])</span>
+<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a>  lower_bound_3 <span class="ot">=</span> <span class="fu">apply</span>(pred_3, <span class="dv">1</span>, quantile, <span class="at">probs =</span> lower_level)</span>
+<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a>  upper_bound_3 <span class="ot">=</span> <span class="fu">apply</span>(pred_3, <span class="dv">1</span>, quantile, <span class="at">probs =</span> upper_level)</span>
+<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a>  cov_array[i,<span class="st">"ABMRS (gamma=1.2)"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_test <span class="sc">&gt;=</span> lower_bound_3) <span class="sc">&amp;</span> (y_test <span class="sc">&lt;=</span> upper_bound_3))</span>
+<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a>  bandwidth_array[i,<span class="st">"ABMRS (gamma=1.2)"</span>] <span class="ot">=</span> <span class="fu">mean</span>(upper_bound_3 <span class="sc">-</span> lower_bound_3)</span>
+<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Thin Plate Spline</span></span>
+<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a>  train_df <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">x1 =</span> x_train[,<span class="dv">1</span>], <span class="at">x2 =</span> x_train[,<span class="dv">2</span>], <span class="at">y =</span> y_obs)</span>
+<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a>  x_test_df <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">x1 =</span> x_test[,<span class="dv">1</span>], <span class="at">x2 =</span> x_test[,<span class="dv">2</span>])</span>
+<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a>  model_tps <span class="ot">=</span> <span class="fu">gam</span>(y<span class="sc">~</span><span class="fu">s</span>(x1, x2, <span class="at">k =</span> <span class="dv">200</span>), <span class="at">data =</span> train_df)</span>
+<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a>  pred_tps <span class="ot">=</span> <span class="fu">predict</span>(model_tps, <span class="at">newdata =</span> x_test_df, <span class="at">se.fit =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a>  y_tps <span class="ot">=</span> pred_tps<span class="sc">$</span>fit</span>
+<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a>  lower_bound_tps <span class="ot">=</span> pred_tps<span class="sc">$</span>fit <span class="sc">-</span> <span class="fu">qnorm</span>(upper_level)<span class="sc">*</span>pred_tps<span class="sc">$</span>se.fit</span>
+<span id="cb5-78"><a href="#cb5-78" aria-hidden="true" tabindex="-1"></a>  upper_bound_tps <span class="ot">=</span> pred_tps<span class="sc">$</span>fit <span class="sc">+</span> <span class="fu">qnorm</span>(upper_level)<span class="sc">*</span>pred_tps<span class="sc">$</span>se.fit</span>
+<span id="cb5-79"><a href="#cb5-79" aria-hidden="true" tabindex="-1"></a>  mse_array[i,<span class="st">"Thin Plate Spline"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_tps <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb5-80"><a href="#cb5-80" aria-hidden="true" tabindex="-1"></a>  censor_mse_array[i,<span class="st">"Thin Plate Spline"</span>] <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">sort</span>((y_tps <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)[<span class="fu">round</span>(p<span class="sc">*</span>m_test)<span class="sc">:</span><span class="fu">round</span>((<span class="dv">1</span><span class="sc">-</span>p)<span class="sc">*</span>m_test)])</span>
+<span id="cb5-81"><a href="#cb5-81" aria-hidden="true" tabindex="-1"></a>  cov_array[i,<span class="st">"Thin Plate Spline"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_test <span class="sc">&gt;=</span> lower_bound_tps) <span class="sc">&amp;</span> (y_test <span class="sc">&lt;=</span> upper_bound_tps))</span>
+<span id="cb5-82"><a href="#cb5-82" aria-hidden="true" tabindex="-1"></a>  bandwidth_array[i,<span class="st">"Thin Plate Spline"</span>] <span class="ot">=</span> <span class="fu">mean</span>(upper_bound_tps <span class="sc">-</span> lower_bound_tps)</span>
+<span id="cb5-83"><a href="#cb5-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-84"><a href="#cb5-84" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Tensor Product Spline</span></span>
+<span id="cb5-85"><a href="#cb5-85" aria-hidden="true" tabindex="-1"></a>  model_tep <span class="ot">=</span> <span class="fu">gam</span>(y<span class="sc">~</span><span class="fu">te</span>(x1, x2, <span class="at">k =</span> <span class="dv">15</span>), <span class="at">data =</span> train_df)</span>
+<span id="cb5-86"><a href="#cb5-86" aria-hidden="true" tabindex="-1"></a>  pred_tep <span class="ot">=</span> <span class="fu">predict</span>(model_tep, <span class="at">newdata =</span> x_test_df, <span class="at">se.fit =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-87"><a href="#cb5-87" aria-hidden="true" tabindex="-1"></a>  y_tep <span class="ot">=</span> pred_tep<span class="sc">$</span>fit</span>
+<span id="cb5-88"><a href="#cb5-88" aria-hidden="true" tabindex="-1"></a>  lower_bound_tep <span class="ot">=</span> pred_tep<span class="sc">$</span>fit <span class="sc">-</span> <span class="fu">qnorm</span>(upper_level)<span class="sc">*</span>pred_tep<span class="sc">$</span>se.fit</span>
+<span id="cb5-89"><a href="#cb5-89" aria-hidden="true" tabindex="-1"></a>  upper_bound_tep <span class="ot">=</span> pred_tep<span class="sc">$</span>fit <span class="sc">+</span> <span class="fu">qnorm</span>(upper_level)<span class="sc">*</span>pred_tep<span class="sc">$</span>se.fit</span>
+<span id="cb5-90"><a href="#cb5-90" aria-hidden="true" tabindex="-1"></a>  mse_array[i,<span class="st">"Tensor Product Spline"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_tep <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb5-91"><a href="#cb5-91" aria-hidden="true" tabindex="-1"></a>  censor_mse_array[i,<span class="st">"Tensor Product Spline"</span>] <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">sort</span>((y_tep <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)[<span class="fu">round</span>(p<span class="sc">*</span>m_test)<span class="sc">:</span><span class="fu">round</span>((<span class="dv">1</span><span class="sc">-</span>p)<span class="sc">*</span>m_test)])</span>
+<span id="cb5-92"><a href="#cb5-92" aria-hidden="true" tabindex="-1"></a>  cov_array[i,<span class="st">"Tensor Product Spline"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_test <span class="sc">&gt;=</span> lower_bound_tep) <span class="sc">&amp;</span> (y_test <span class="sc">&lt;=</span> upper_bound_tep))</span>
+<span id="cb5-93"><a href="#cb5-93" aria-hidden="true" tabindex="-1"></a>  bandwidth_array[i,<span class="st">"Tensor Product Spline"</span>] <span class="ot">=</span> <span class="fu">mean</span>(upper_bound_tep <span class="sc">-</span> lower_bound_tep)</span>
+<span id="cb5-94"><a href="#cb5-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-95"><a href="#cb5-95" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Gaussian Process Regression</span></span>
+<span id="cb5-96"><a href="#cb5-96" aria-hidden="true" tabindex="-1"></a>  gp_model <span class="ot">=</span> <span class="fu">gpkm</span>(<span class="at">X =</span> x_train, <span class="at">Z =</span> y_obs, <span class="at">kernel =</span> <span class="fu">k_Matern52</span>(<span class="at">D =</span> <span class="dv">2</span>))</span>
+<span id="cb5-97"><a href="#cb5-97" aria-hidden="true" tabindex="-1"></a>  pred_gp <span class="ot">=</span> gp_model<span class="sc">$</span><span class="fu">pred</span>(x_test, <span class="at">se =</span> <span class="cn">TRUE</span>, <span class="at">mean_dist =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-98"><a href="#cb5-98" aria-hidden="true" tabindex="-1"></a>  mse_array[i,<span class="st">"Gaussian Process"</span>] <span class="ot">=</span> <span class="fu">mean</span>((pred_gp<span class="sc">$</span>mean <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb5-99"><a href="#cb5-99" aria-hidden="true" tabindex="-1"></a>  censor_mse_array[i,<span class="st">"Gaussian Process"</span>] <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">sort</span>((pred_gp<span class="sc">$</span>mean <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)[<span class="fu">round</span>(p<span class="sc">*</span>m_test)<span class="sc">:</span><span class="fu">round</span>((<span class="dv">1</span><span class="sc">-</span>p)<span class="sc">*</span>m_test)])</span>
+<span id="cb5-100"><a href="#cb5-100" aria-hidden="true" tabindex="-1"></a>  lower_bound_gp <span class="ot">=</span> pred_gp<span class="sc">$</span>mean <span class="sc">-</span> <span class="fu">qnorm</span>(upper_level)<span class="sc">*</span>pred_gp<span class="sc">$</span>se</span>
+<span id="cb5-101"><a href="#cb5-101" aria-hidden="true" tabindex="-1"></a>  upper_bound_gp <span class="ot">=</span> pred_gp<span class="sc">$</span>mean <span class="sc">+</span> <span class="fu">qnorm</span>(upper_level)<span class="sc">*</span>pred_gp<span class="sc">$</span>se</span>
+<span id="cb5-102"><a href="#cb5-102" aria-hidden="true" tabindex="-1"></a>  cov_array[i,<span class="st">"Gaussian Process"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_test <span class="sc">&gt;=</span> lower_bound_gp) <span class="sc">&amp;</span> (y_test <span class="sc">&lt;=</span> upper_bound_gp))</span>
+<span id="cb5-103"><a href="#cb5-103" aria-hidden="true" tabindex="-1"></a>  bandwidth_array[i,<span class="st">"Gaussian Process"</span>] <span class="ot">=</span> <span class="fu">mean</span>(upper_bound_gp <span class="sc">-</span> lower_bound_gp)</span>
+<span id="cb5-104"><a href="#cb5-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-105"><a href="#cb5-105" aria-hidden="true" tabindex="-1"></a>  <span class="co"># BASS</span></span>
+<span id="cb5-106"><a href="#cb5-106" aria-hidden="true" tabindex="-1"></a>  bass <span class="ot">=</span> <span class="fu">bass</span>(<span class="at">xx =</span> x_train, <span class="at">y =</span> y_obs, <span class="at">nmcmc =</span> <span class="dv">10000</span>, <span class="at">nburn =</span> <span class="dv">9000</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb5-107"><a href="#cb5-107" aria-hidden="true" tabindex="-1"></a>  pred_bass <span class="ot">=</span> <span class="fu">predict</span>(bass, x_test)</span>
+<span id="cb5-108"><a href="#cb5-108" aria-hidden="true" tabindex="-1"></a>  y_bass <span class="ot">=</span> <span class="fu">colMeans</span>(pred_bass)</span>
+<span id="cb5-109"><a href="#cb5-109" aria-hidden="true" tabindex="-1"></a>  mse_array[i,<span class="st">"BASS"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_bass <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb5-110"><a href="#cb5-110" aria-hidden="true" tabindex="-1"></a>  censor_mse_array[i,<span class="st">"BASS"</span>] <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">sort</span>((y_bass <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)[<span class="fu">round</span>(p<span class="sc">*</span>m_test)<span class="sc">:</span><span class="fu">round</span>((<span class="dv">1</span><span class="sc">-</span>p)<span class="sc">*</span>m_test)])</span>
+<span id="cb5-111"><a href="#cb5-111" aria-hidden="true" tabindex="-1"></a>  lower_bound_bass <span class="ot">=</span> <span class="fu">apply</span>(pred_bass, <span class="dv">2</span>, quantile, <span class="at">probs =</span> lower_level)</span>
+<span id="cb5-112"><a href="#cb5-112" aria-hidden="true" tabindex="-1"></a>  upper_bound_bass <span class="ot">=</span> <span class="fu">apply</span>(pred_bass, <span class="dv">2</span>, quantile, <span class="at">probs =</span> upper_level)</span>
+<span id="cb5-113"><a href="#cb5-113" aria-hidden="true" tabindex="-1"></a>  cov_array[i,<span class="st">"BASS"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_test <span class="sc">&gt;=</span> lower_bound_bass) <span class="sc">&amp;</span> (y_test <span class="sc">&lt;=</span> upper_bound_bass))</span>
+<span id="cb5-114"><a href="#cb5-114" aria-hidden="true" tabindex="-1"></a>  bandwidth_array[i,<span class="st">"BASS"</span>] <span class="ot">=</span> <span class="fu">mean</span>(upper_bound_bass <span class="sc">-</span> lower_bound_bass)</span>
+<span id="cb5-115"><a href="#cb5-115" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Running Case 1 
+Expected run time: 66 seconds
+Running Case 2 
+Expected run time: 66 seconds
+Running Case 3 
+Expected run time: 66 seconds</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>time.end <span class="ot">=</span> <span class="fu">Sys.time</span>()</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(time.end<span class="sc">-</span>time.start)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Time difference of 6.318859 mins</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mse_array)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       ABMRS (gamma=0.8) ABMRS (gamma=1) ABMRS (gamma=1.2) Thin Plate Spline
+Case 1        0.03963851      0.04344185        0.05082728        0.04270866
+Case 2        0.20597253      0.21026786        1.07326059        2.45205666
+Case 3        0.79134024      0.82964584        0.77831586        3.10872903
+       Tensor Product Spline Gaussian Process      BASS
+Case 1            0.04082356       0.03299809 0.2058582
+Case 2            2.36706100       1.41175244 4.6543242
+Case 3            3.34732688       2.64074799 7.3664223</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(censor_mse_array)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       ABMRS (gamma=0.8) ABMRS (gamma=1) ABMRS (gamma=1.2) Thin Plate Spline
+Case 1        0.03222926      0.03743164        0.04465087        0.03791154
+Case 2        0.17756801      0.18213473        0.30408411        1.04957203
+Case 3        0.31734017      0.32625453        0.31323275        1.56436637
+       Tensor Product Spline Gaussian Process      BASS
+Case 1            0.03608664       0.02924776 0.1680263
+Case 2            0.98569462       0.83746535 2.6808948
+Case 3            1.71353003       1.38662097 4.4136512</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(cov_array)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       ABMRS (gamma=0.8) ABMRS (gamma=1) ABMRS (gamma=1.2) Thin Plate Spline
+Case 1             0.942           0.932             0.888             0.966
+Case 2             0.950           0.942             0.838             0.928
+Case 3             0.924           0.922             0.926             0.884
+       Tensor Product Spline Gaussian Process  BASS
+Case 1                 0.972            0.978 0.500
+Case 2                 0.910            0.968 0.560
+Case 3                 0.896            0.930 0.408</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(bandwidth_array)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       ABMRS (gamma=0.8) ABMRS (gamma=1) ABMRS (gamma=1.2) Thin Plate Spline
+Case 1         0.7940075        0.786574         0.7159476         0.9092863
+Case 2         1.7818498        1.806211         1.7505057         4.2805483
+Case 3         2.2660080        2.273476         2.2726569         3.9765507
+       Tensor Product Spline Gaussian Process      BASS
+Case 1              0.977750        0.9018116 0.5830072
+Case 2              3.652408        4.5654508 2.0436936
+Case 3              4.476201        4.8399988 2.1803095</code></pre>
+</div>
+</div>
+<p>Plot fitted surfaces</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>time.start <span class="ot">=</span> <span class="fu">Sys.time</span>()</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="co"># generate training data</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>m_train <span class="ot">=</span> <span class="dv">500</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>x_train <span class="ot">=</span> <span class="fu">cbind</span>(<span class="fu">runif</span>(m_train,<span class="dv">0</span>,<span class="dv">1</span>), <span class="fu">runif</span>(m_train,<span class="dv">0</span>,<span class="dv">1</span>))</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>xmin <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>xmax <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="co"># speed/quality knobs</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>grid_step <span class="ot">&lt;-</span> <span class="fl">0.01</span>   <span class="co"># was 0.01; larger = faster</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>burns_plot <span class="ot">&lt;-</span> <span class="dv">20000</span>  <span class="co"># was 20000; smaller = faster</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>steps_plot <span class="ot">&lt;-</span> <span class="dv">20000</span>  <span class="co"># was 20000; smaller = faster</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="at">by=</span>grid_step)</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>grid_xy <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">x1 =</span> grid, <span class="at">x2 =</span> grid)</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>grid_mat <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(grid_xy)</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>n_grid <span class="ot">&lt;-</span> <span class="fu">length</span>(grid)</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a><span class="fu">pdf</span>(<span class="at">file =</span> <span class="fu">file.path</span>(<span class="st">"/Users/hjh/PhD/ABMRS/exampleABMRS/figures/surface_fitting"</span>,<span class="st">"surface_fitting.pdf"</span>), <span class="at">width =</span> <span class="dv">16</span>, <span class="at">height =</span> <span class="dv">9</span>)</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">8</span>))</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>))</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>)) {</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>  f <span class="ot">=</span> fs[[i]]; noise <span class="ot">=</span> noises[i]</span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>  y_train <span class="ot">=</span> <span class="fu">f</span>(x_train)</span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>  y_obs <span class="ot">=</span> y_train <span class="sc">+</span> <span class="fu">rnorm</span>(m_train,<span class="dv">0</span>,noise)</span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>  z_true <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">f</span>(grid_mat), <span class="at">nrow =</span> n_grid, <span class="at">ncol =</span> n_grid)</span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">contour</span>(<span class="at">x=</span>grid,<span class="at">y=</span>grid,<span class="at">z=</span>z_true,<span class="at">axes =</span> <span class="cn">FALSE</span>,<span class="at">frame.plot =</span><span class="cn">TRUE</span>)</span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ABMRS with gamma = 0.8</span></span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>  mebars_1 <span class="ot">=</span> <span class="fu">mebars</span>(x_train, y_obs, xmin, xmax, <span class="at">gamma =</span> <span class="fl">0.8</span>, <span class="at">times =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">2</span>))</span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a>  mebars_1<span class="sc">$</span><span class="fu">rjmcmc</span>(<span class="at">burns=</span>burns_plot,<span class="at">steps=</span>steps_plot)</span>
+<span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a>  pred_1_grid <span class="ot">&lt;-</span> mebars_1<span class="sc">$</span><span class="fu">predict</span>(grid_mat)</span>
+<span id="cb17-33"><a href="#cb17-33" aria-hidden="true" tabindex="-1"></a>  z_1 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rowMeans</span>(pred_1_grid), <span class="at">nrow =</span> n_grid, <span class="at">ncol =</span> n_grid)</span>
+<span id="cb17-34"><a href="#cb17-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">contour</span>(<span class="at">x=</span>grid,<span class="at">y=</span>grid,<span class="at">z=</span>z_1,<span class="at">axes =</span> <span class="cn">FALSE</span>,<span class="at">frame.plot =</span><span class="cn">TRUE</span>)</span>
+<span id="cb17-35"><a href="#cb17-35" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ABMRS with gamma = 1.0</span></span>
+<span id="cb17-36"><a href="#cb17-36" aria-hidden="true" tabindex="-1"></a>  mebars_2 <span class="ot">=</span> <span class="fu">mebars</span>(x_train, y_obs, xmin, xmax, <span class="at">gamma =</span> <span class="fl">1.0</span>, <span class="at">times =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">2</span>))</span>
+<span id="cb17-37"><a href="#cb17-37" aria-hidden="true" tabindex="-1"></a>  mebars_2<span class="sc">$</span><span class="fu">rjmcmc</span>(<span class="at">burns=</span>burns_plot,<span class="at">steps=</span>steps_plot)</span>
+<span id="cb17-38"><a href="#cb17-38" aria-hidden="true" tabindex="-1"></a>  pred_2_grid <span class="ot">&lt;-</span> mebars_2<span class="sc">$</span><span class="fu">predict</span>(grid_mat)</span>
+<span id="cb17-39"><a href="#cb17-39" aria-hidden="true" tabindex="-1"></a>  z_2 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rowMeans</span>(pred_2_grid), <span class="at">nrow =</span> n_grid, <span class="at">ncol =</span> n_grid)</span>
+<span id="cb17-40"><a href="#cb17-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">contour</span>(<span class="at">x=</span>grid,<span class="at">y=</span>grid,<span class="at">z=</span>z_2,<span class="at">axes =</span> <span class="cn">FALSE</span>,<span class="at">frame.plot =</span><span class="cn">TRUE</span>)</span>
+<span id="cb17-41"><a href="#cb17-41" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ABMRS with gamma = 1.2</span></span>
+<span id="cb17-42"><a href="#cb17-42" aria-hidden="true" tabindex="-1"></a>  mebars_3 <span class="ot">=</span> <span class="fu">mebars</span>(x_train, y_obs, xmin, xmax, <span class="at">gamma =</span> <span class="fl">1.2</span>, <span class="at">times =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">2</span>))</span>
+<span id="cb17-43"><a href="#cb17-43" aria-hidden="true" tabindex="-1"></a>  mebars_3<span class="sc">$</span><span class="fu">rjmcmc</span>(<span class="at">burns=</span>burns_plot,<span class="at">steps=</span>steps_plot)</span>
+<span id="cb17-44"><a href="#cb17-44" aria-hidden="true" tabindex="-1"></a>  pred_3_grid <span class="ot">&lt;-</span> mebars_3<span class="sc">$</span><span class="fu">predict</span>(grid_mat)</span>
+<span id="cb17-45"><a href="#cb17-45" aria-hidden="true" tabindex="-1"></a>  z_3 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rowMeans</span>(pred_3_grid), <span class="at">nrow =</span> n_grid, <span class="at">ncol =</span> n_grid)</span>
+<span id="cb17-46"><a href="#cb17-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">contour</span>(<span class="at">x=</span>grid,<span class="at">y=</span>grid,<span class="at">z=</span>z_3,<span class="at">axes =</span> <span class="cn">FALSE</span>,<span class="at">frame.plot =</span><span class="cn">TRUE</span>)</span>
+<span id="cb17-47"><a href="#cb17-47" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Thin Plate Spline</span></span>
+<span id="cb17-48"><a href="#cb17-48" aria-hidden="true" tabindex="-1"></a>  train_df <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">x1 =</span> x_train[,<span class="dv">1</span>], <span class="at">x2 =</span> x_train[,<span class="dv">2</span>], <span class="at">y =</span> y_obs)</span>
+<span id="cb17-49"><a href="#cb17-49" aria-hidden="true" tabindex="-1"></a>  model_tps <span class="ot">=</span> <span class="fu">gam</span>(y_obs<span class="sc">~</span><span class="fu">s</span>(x1, x2, <span class="at">k =</span> <span class="dv">200</span>), <span class="at">data =</span> train_df)</span>
+<span id="cb17-50"><a href="#cb17-50" aria-hidden="true" tabindex="-1"></a>  z_tps <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">predict</span>(model_tps, <span class="at">newdata =</span> grid_xy), <span class="at">nrow =</span> n_grid, <span class="at">ncol =</span> n_grid)</span>
+<span id="cb17-51"><a href="#cb17-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">contour</span>(<span class="at">x=</span>grid,<span class="at">y=</span>grid,<span class="at">z=</span>z_tps,<span class="at">axes =</span> <span class="cn">FALSE</span>,<span class="at">frame.plot =</span><span class="cn">TRUE</span>)</span>
+<span id="cb17-52"><a href="#cb17-52" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Tensor Product Spline</span></span>
+<span id="cb17-53"><a href="#cb17-53" aria-hidden="true" tabindex="-1"></a>  model_tep <span class="ot">=</span> <span class="fu">gam</span>(y_obs<span class="sc">~</span><span class="fu">te</span>(x1, x2, <span class="at">k =</span> <span class="dv">15</span>), <span class="at">data =</span> train_df)</span>
+<span id="cb17-54"><a href="#cb17-54" aria-hidden="true" tabindex="-1"></a>  z_tep <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">predict</span>(model_tep, <span class="at">newdata =</span> grid_xy), <span class="at">nrow =</span> n_grid, <span class="at">ncol =</span> n_grid)</span>
+<span id="cb17-55"><a href="#cb17-55" aria-hidden="true" tabindex="-1"></a>  <span class="fu">contour</span>(<span class="at">x=</span>grid,<span class="at">y=</span>grid,<span class="at">z=</span>z_tep,<span class="at">axes =</span> <span class="cn">FALSE</span>,<span class="at">frame.plot =</span><span class="cn">TRUE</span>)</span>
+<span id="cb17-56"><a href="#cb17-56" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Gaussian Process Regression</span></span>
+<span id="cb17-57"><a href="#cb17-57" aria-hidden="true" tabindex="-1"></a>  gp_model <span class="ot">=</span> <span class="fu">gpkm</span>(<span class="at">X =</span> x_train, <span class="at">Z =</span> y_obs, <span class="at">kernel =</span> <span class="fu">k_Matern52</span>(<span class="at">D =</span> <span class="dv">2</span>))</span>
+<span id="cb17-58"><a href="#cb17-58" aria-hidden="true" tabindex="-1"></a>  pred_gp_grid <span class="ot">=</span> gp_model<span class="sc">$</span><span class="fu">pred</span>(grid_mat, <span class="at">se =</span> <span class="cn">TRUE</span>, <span class="at">mean_dist =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb17-59"><a href="#cb17-59" aria-hidden="true" tabindex="-1"></a>  z_gp <span class="ot">&lt;-</span> <span class="fu">matrix</span>(pred_gp_grid<span class="sc">$</span>mean, <span class="at">nrow =</span> n_grid, <span class="at">ncol =</span> n_grid)</span>
+<span id="cb17-60"><a href="#cb17-60" aria-hidden="true" tabindex="-1"></a>  <span class="fu">contour</span>(<span class="at">x=</span>grid,<span class="at">y=</span>grid,<span class="at">z=</span>z_gp,<span class="at">axes =</span> <span class="cn">FALSE</span>,<span class="at">frame.plot =</span><span class="cn">TRUE</span>)</span>
+<span id="cb17-61"><a href="#cb17-61" aria-hidden="true" tabindex="-1"></a>  <span class="co"># BASS</span></span>
+<span id="cb17-62"><a href="#cb17-62" aria-hidden="true" tabindex="-1"></a>  bass <span class="ot">=</span> <span class="fu">bass</span>(<span class="at">xx =</span> x_train, <span class="at">y =</span> y_obs, <span class="at">nmcmc =</span> <span class="dv">10000</span>, <span class="at">nburn =</span> <span class="dv">9000</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb17-63"><a href="#cb17-63" aria-hidden="true" tabindex="-1"></a>  pred_bass_grid <span class="ot">=</span> <span class="fu">predict</span>(bass, grid_mat)</span>
+<span id="cb17-64"><a href="#cb17-64" aria-hidden="true" tabindex="-1"></a>  z_bass <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">colMeans</span>(pred_bass_grid), <span class="at">nrow =</span> n_grid, <span class="at">ncol =</span> n_grid)</span>
+<span id="cb17-65"><a href="#cb17-65" aria-hidden="true" tabindex="-1"></a>  <span class="fu">contour</span>(<span class="at">x=</span>grid,<span class="at">y=</span>grid,<span class="at">z=</span>z_bass,<span class="at">axes =</span> <span class="cn">FALSE</span>,<span class="at">frame.plot =</span><span class="cn">TRUE</span>)</span>
+<span id="cb17-66"><a href="#cb17-66" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Expected run time: 9 seconds</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Expected run time: 9 seconds</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Expected run time: 9 seconds</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dev.off</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>quartz_off_screen 
+                2 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>time.end <span class="ot">=</span> <span class="fu">Sys.time</span>()</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(time.end<span class="sc">-</span>time.start)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Time difference of 17.65423 mins</code></pre>
+</div>
+</div>
+</section>
+<section id="function-for-bass" class="level1">
+<h1>Function for BASS</h1>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>g1 <span class="ot">=</span> <span class="cf">function</span>(x) {</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="fl">10.391</span> <span class="sc">*</span> ((x[,<span class="dv">1</span>]<span class="sc">-</span><span class="fl">0.4</span>)<span class="sc">*</span>(x[,<span class="dv">2</span>]<span class="sc">-</span><span class="fl">0.6</span>)) <span class="sc">+</span> <span class="fl">0.36</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>g2 <span class="ot">=</span> <span class="cf">function</span>(x) {</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>  r2 <span class="ot">=</span> (x[,<span class="dv">1</span>]<span class="sc">-</span><span class="fl">0.5</span>)<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> (x[,<span class="dv">2</span>]<span class="sc">-</span><span class="fl">0.5</span>)<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>  <span class="fl">24.342</span> <span class="sc">*</span> r2 <span class="sc">*</span> (<span class="fl">0.75</span> <span class="sc">-</span> r2)</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>g3 <span class="ot">=</span> <span class="cf">function</span>(x) {</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>  x1_hat <span class="ot">=</span> x[,<span class="dv">1</span>] <span class="sc">-</span> <span class="fl">0.5</span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>  x2_hat <span class="ot">=</span> x[,<span class="dv">2</span>] <span class="sc">-</span> <span class="fl">0.5</span></span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>  <span class="fl">42.659</span> <span class="sc">*</span> (<span class="fl">0.1</span> <span class="sc">+</span> x1_hat<span class="sc">*</span>(<span class="fl">0.05</span><span class="sc">+</span>x1_hat<span class="sc">^</span><span class="dv">4-10</span><span class="sc">*</span>x1_hat<span class="sc">^</span><span class="dv">2</span><span class="sc">*</span>x2_hat<span class="sc">^</span><span class="dv">2</span><span class="sc">+</span><span class="dv">5</span><span class="sc">*</span>x2_hat<span class="sc">^</span><span class="dv">4</span>))</span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a>g4 <span class="ot">=</span> <span class="cf">function</span>(x) {</span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a>  <span class="fl">1.3356</span> <span class="sc">*</span> (<span class="fl">1.5</span><span class="sc">*</span>(<span class="dv">1</span><span class="sc">-</span>x[,<span class="dv">1</span>]) <span class="sc">+</span> <span class="fu">exp</span>(<span class="dv">2</span><span class="sc">*</span>x[,<span class="dv">1</span>]<span class="sc">-</span><span class="dv">1</span>)<span class="sc">*</span><span class="fu">sin</span>(<span class="dv">3</span><span class="sc">*</span>pi<span class="sc">*</span>(x[,<span class="dv">1</span>]<span class="sc">-</span><span class="fl">0.6</span>)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">+</span> <span class="fu">exp</span>(<span class="dv">3</span><span class="sc">*</span>(x[,<span class="dv">2</span>]<span class="sc">-</span><span class="fl">0.5</span>))<span class="sc">*</span><span class="fu">sin</span>(<span class="dv">4</span><span class="sc">*</span>pi<span class="sc">*</span>(x[,<span class="dv">2</span>]<span class="sc">-</span><span class="fl">0.9</span>)<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a>g5 <span class="ot">=</span> <span class="cf">function</span>(x) {</span>
+<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a>  <span class="fl">1.9</span> <span class="sc">*</span> (<span class="fl">1.35</span> <span class="sc">+</span> <span class="fu">exp</span>(x[,<span class="dv">1</span>])<span class="sc">*</span><span class="fu">sin</span>(<span class="dv">13</span><span class="sc">*</span>(x[,<span class="dv">1</span>]<span class="sc">-</span><span class="fl">0.6</span>)<span class="sc">^</span><span class="dv">2</span>)<span class="sc">*</span><span class="fu">exp</span>(<span class="sc">-</span>x[,<span class="dv">2</span>])<span class="sc">*</span><span class="fu">sin</span>(<span class="dv">7</span><span class="sc">*</span>x[,<span class="dv">2</span>]))</span>
+<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>gs <span class="ot">=</span> <span class="fu">list</span>(g1,g2,g3,g4,g5)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>noises_bass <span class="ot">=</span> <span class="fu">c</span>(<span class="fl">0.25</span>,<span class="fl">0.22</span>,<span class="fl">0.22</span>,<span class="fl">0.25</span>,<span class="fl">0.25</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Run simulation</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>time.start <span class="ot">=</span> <span class="fu">Sys.time</span>()</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="co"># generate training data</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>m_train <span class="ot">=</span> <span class="dv">250</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>x_train <span class="ot">=</span> <span class="fu">cbind</span>(<span class="fu">runif</span>(m_train,<span class="dv">0</span>,<span class="dv">1</span>), <span class="fu">runif</span>(m_train,<span class="dv">0</span>,<span class="dv">1</span>))</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>m_test <span class="ot">=</span> <span class="dv">250</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>x_test <span class="ot">=</span> <span class="fu">cbind</span>(<span class="fu">runif</span>(m_test,<span class="dv">0</span>,<span class="dv">1</span>), <span class="fu">runif</span>(m_test,<span class="dv">0</span>,<span class="dv">1</span>))</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>xmin <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>xmax <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>p <span class="ot">=</span> <span class="fl">0.025</span> <span class="co"># censoring proportion</span></span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>level <span class="ot">=</span> <span class="fl">0.95</span> <span class="co"># credible level</span></span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>upper_level <span class="ot">=</span> (<span class="dv">1</span> <span class="sc">+</span> level)<span class="sc">/</span><span class="dv">2</span></span>
+<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a>lower_level <span class="ot">=</span> (<span class="dv">1</span> <span class="sc">-</span> level)<span class="sc">/</span><span class="dv">2</span></span>
+<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a>cases <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"Case 1"</span>,<span class="st">"Case 2"</span>,<span class="st">"Case 3"</span>, <span class="st">"Case 4"</span>, <span class="st">"Case 5"</span>)</span>
+<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a>methods <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"ABMRS (gamma=0.8)"</span>,<span class="st">"ABMRS (gamma=1)"</span>,<span class="st">"ABMRS (gamma=1.2)"</span>,<span class="st">"Thin Plate Spline"</span>,<span class="st">"Tensor Product Spline"</span>,<span class="st">"Gaussian Process"</span>, <span class="st">"BASS"</span>)</span>
+<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a>censor_mse_array <span class="ot">=</span> <span class="fu">array</span>(<span class="cn">NA</span>, <span class="at">dim =</span> <span class="fu">c</span>(<span class="fu">length</span>(cases), <span class="fu">length</span>(methods)), </span>
+<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a>                        <span class="at">dimnames =</span> <span class="fu">list</span>(cases, methods))</span>
+<span id="cb28-18"><a href="#cb28-18" aria-hidden="true" tabindex="-1"></a>mse_array <span class="ot">=</span> <span class="fu">array</span>(<span class="cn">NA</span>, <span class="at">dim =</span> <span class="fu">c</span>(<span class="fu">length</span>(cases), <span class="fu">length</span>(methods)), </span>
+<span id="cb28-19"><a href="#cb28-19" aria-hidden="true" tabindex="-1"></a>                  <span class="at">dimnames =</span> <span class="fu">list</span>(cases, methods))</span>
+<span id="cb28-20"><a href="#cb28-20" aria-hidden="true" tabindex="-1"></a>cov_array <span class="ot">=</span> <span class="fu">array</span>(<span class="cn">NA</span>, <span class="at">dim =</span> <span class="fu">c</span>(<span class="fu">length</span>(cases), <span class="fu">length</span>(methods)), </span>
+<span id="cb28-21"><a href="#cb28-21" aria-hidden="true" tabindex="-1"></a>                   <span class="at">dimnames =</span> <span class="fu">list</span>(cases, methods))</span>
+<span id="cb28-22"><a href="#cb28-22" aria-hidden="true" tabindex="-1"></a>bandwidth_array <span class="ot">=</span> <span class="fu">array</span>(<span class="cn">NA</span>, <span class="at">dim =</span> <span class="fu">c</span>(<span class="fu">length</span>(cases), <span class="fu">length</span>(methods)), </span>
+<span id="cb28-23"><a href="#cb28-23" aria-hidden="true" tabindex="-1"></a>                      <span class="at">dimnames =</span> <span class="fu">list</span>(cases, methods))</span>
+<span id="cb28-24"><a href="#cb28-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-25"><a href="#cb28-25" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(cases))) {</span>
+<span id="cb28-26"><a href="#cb28-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">"Running"</span>, cases[i], <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb28-27"><a href="#cb28-27" aria-hidden="true" tabindex="-1"></a>  f <span class="ot">=</span> gs[[i]]; noise <span class="ot">=</span> noises_bass[i]</span>
+<span id="cb28-28"><a href="#cb28-28" aria-hidden="true" tabindex="-1"></a>  y_train <span class="ot">=</span> <span class="fu">f</span>(x_train)</span>
+<span id="cb28-29"><a href="#cb28-29" aria-hidden="true" tabindex="-1"></a>  y_obs <span class="ot">=</span> y_train <span class="sc">+</span> <span class="fu">rnorm</span>(m_train, <span class="dv">0</span>, noise)</span>
+<span id="cb28-30"><a href="#cb28-30" aria-hidden="true" tabindex="-1"></a>  y_test <span class="ot">=</span> <span class="fu">f</span>(x_test)</span>
+<span id="cb28-31"><a href="#cb28-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-32"><a href="#cb28-32" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ABMRS with gamma = 0.8</span></span>
+<span id="cb28-33"><a href="#cb28-33" aria-hidden="true" tabindex="-1"></a>  mebars_1 <span class="ot">=</span> <span class="fu">mebars</span>(x_train, y_obs, xmin, xmax, <span class="at">gamma =</span> <span class="fl">0.8</span>, <span class="at">times =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">2</span>))</span>
+<span id="cb28-34"><a href="#cb28-34" aria-hidden="true" tabindex="-1"></a>  mebars_1<span class="sc">$</span><span class="fu">rjmcmc</span>(<span class="at">burns=</span><span class="dv">20000</span>,<span class="at">steps=</span><span class="dv">20000</span>)</span>
+<span id="cb28-35"><a href="#cb28-35" aria-hidden="true" tabindex="-1"></a>  pred_1 <span class="ot">=</span> mebars_1<span class="sc">$</span><span class="fu">predict</span>(x_test)</span>
+<span id="cb28-36"><a href="#cb28-36" aria-hidden="true" tabindex="-1"></a>  y_mebars_1 <span class="ot">=</span> <span class="fu">rowMeans</span>(pred_1)</span>
+<span id="cb28-37"><a href="#cb28-37" aria-hidden="true" tabindex="-1"></a>  mse_array[i,<span class="st">"ABMRS (gamma=0.8)"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_mebars_1 <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb28-38"><a href="#cb28-38" aria-hidden="true" tabindex="-1"></a>  censor_mse_array[i,<span class="st">"ABMRS (gamma=0.8)"</span>] <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">sort</span>((y_mebars_1 <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)[<span class="fu">round</span>(p<span class="sc">*</span>m_test)<span class="sc">:</span><span class="fu">round</span>((<span class="dv">1</span><span class="sc">-</span>p)<span class="sc">*</span>m_test)])</span>
+<span id="cb28-39"><a href="#cb28-39" aria-hidden="true" tabindex="-1"></a>  lower_bound_1 <span class="ot">=</span> <span class="fu">apply</span>(pred_1, <span class="dv">1</span>, quantile, <span class="at">probs =</span> lower_level)</span>
+<span id="cb28-40"><a href="#cb28-40" aria-hidden="true" tabindex="-1"></a>  upper_bound_1 <span class="ot">=</span> <span class="fu">apply</span>(pred_1, <span class="dv">1</span>, quantile, <span class="at">probs =</span> upper_level)</span>
+<span id="cb28-41"><a href="#cb28-41" aria-hidden="true" tabindex="-1"></a>  cov_array[i,<span class="st">"ABMRS (gamma=0.8)"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_test <span class="sc">&gt;=</span> lower_bound_1) <span class="sc">&amp;</span> (y_test <span class="sc">&lt;=</span> upper_bound_1))</span>
+<span id="cb28-42"><a href="#cb28-42" aria-hidden="true" tabindex="-1"></a>  bandwidth_array[i,<span class="st">"ABMRS (gamma=0.8)"</span>] <span class="ot">=</span> <span class="fu">mean</span>(upper_bound_1 <span class="sc">-</span> lower_bound_1)</span>
+<span id="cb28-43"><a href="#cb28-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-44"><a href="#cb28-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-45"><a href="#cb28-45" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ABMRS with gamma = 1</span></span>
+<span id="cb28-46"><a href="#cb28-46" aria-hidden="true" tabindex="-1"></a>  mebars_2 <span class="ot">=</span> <span class="fu">mebars</span>(x_train, y_obs, xmin, xmax, <span class="at">gamma =</span> <span class="dv">1</span>, <span class="at">times =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">2</span>))</span>
+<span id="cb28-47"><a href="#cb28-47" aria-hidden="true" tabindex="-1"></a>  mebars_2<span class="sc">$</span><span class="fu">rjmcmc</span>(<span class="at">burns=</span><span class="dv">20000</span>,<span class="at">steps=</span><span class="dv">20000</span>)</span>
+<span id="cb28-48"><a href="#cb28-48" aria-hidden="true" tabindex="-1"></a>  pred_2 <span class="ot">=</span> mebars_2<span class="sc">$</span><span class="fu">predict</span>(x_test)</span>
+<span id="cb28-49"><a href="#cb28-49" aria-hidden="true" tabindex="-1"></a>  y_mebars_2 <span class="ot">=</span> <span class="fu">rowMeans</span>(pred_2)</span>
+<span id="cb28-50"><a href="#cb28-50" aria-hidden="true" tabindex="-1"></a>  mse_array[i,<span class="st">"ABMRS (gamma=1)"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_mebars_2 <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb28-51"><a href="#cb28-51" aria-hidden="true" tabindex="-1"></a>  censor_mse_array[i,<span class="st">"ABMRS (gamma=1)"</span>] <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">sort</span>((y_mebars_2 <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)[<span class="fu">round</span>(p<span class="sc">*</span>m_test)<span class="sc">:</span><span class="fu">round</span>((<span class="dv">1</span><span class="sc">-</span>p)<span class="sc">*</span>m_test)])</span>
+<span id="cb28-52"><a href="#cb28-52" aria-hidden="true" tabindex="-1"></a>  lower_bound_2 <span class="ot">=</span> <span class="fu">apply</span>(pred_2, <span class="dv">1</span>, quantile, <span class="at">probs =</span> lower_level)</span>
+<span id="cb28-53"><a href="#cb28-53" aria-hidden="true" tabindex="-1"></a>  upper_bound_2 <span class="ot">=</span> <span class="fu">apply</span>(pred_2, <span class="dv">1</span>, quantile, <span class="at">probs =</span> upper_level)</span>
+<span id="cb28-54"><a href="#cb28-54" aria-hidden="true" tabindex="-1"></a>  cov_array[i,<span class="st">"ABMRS (gamma=1)"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_test <span class="sc">&gt;=</span> lower_bound_2) <span class="sc">&amp;</span> (y_test <span class="sc">&lt;=</span> upper_bound_2))</span>
+<span id="cb28-55"><a href="#cb28-55" aria-hidden="true" tabindex="-1"></a>  bandwidth_array[i,<span class="st">"ABMRS (gamma=1)"</span>] <span class="ot">=</span> <span class="fu">mean</span>(upper_bound_2 <span class="sc">-</span> lower_bound_2)</span>
+<span id="cb28-56"><a href="#cb28-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-57"><a href="#cb28-57" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ABMRS with gamma = 1.2</span></span>
+<span id="cb28-58"><a href="#cb28-58" aria-hidden="true" tabindex="-1"></a>  mebars_3 <span class="ot">=</span> <span class="fu">mebars</span>(x_train, y_obs, xmin, xmax, <span class="at">gamma =</span> <span class="fl">1.2</span>, <span class="at">times =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">2</span>))</span>
+<span id="cb28-59"><a href="#cb28-59" aria-hidden="true" tabindex="-1"></a>  mebars_3<span class="sc">$</span><span class="fu">rjmcmc</span>(<span class="at">burns=</span><span class="dv">20000</span>,<span class="at">steps=</span><span class="dv">20000</span>)</span>
+<span id="cb28-60"><a href="#cb28-60" aria-hidden="true" tabindex="-1"></a>  pred_3 <span class="ot">=</span> mebars_3<span class="sc">$</span><span class="fu">predict</span>(x_test)</span>
+<span id="cb28-61"><a href="#cb28-61" aria-hidden="true" tabindex="-1"></a>  y_mebars_3 <span class="ot">=</span> <span class="fu">rowMeans</span>(pred_3)</span>
+<span id="cb28-62"><a href="#cb28-62" aria-hidden="true" tabindex="-1"></a>  mse_array[i,<span class="st">"ABMRS (gamma=1.2)"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_mebars_3 <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb28-63"><a href="#cb28-63" aria-hidden="true" tabindex="-1"></a>  censor_mse_array[i,<span class="st">"ABMRS (gamma=1.2)"</span>] <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">sort</span>((y_mebars_3 <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)[<span class="fu">round</span>(p<span class="sc">*</span>m_test)<span class="sc">:</span><span class="fu">round</span>((<span class="dv">1</span><span class="sc">-</span>p)<span class="sc">*</span>m_test)])</span>
+<span id="cb28-64"><a href="#cb28-64" aria-hidden="true" tabindex="-1"></a>  lower_bound_3 <span class="ot">=</span> <span class="fu">apply</span>(pred_3, <span class="dv">1</span>, quantile, <span class="at">probs =</span> lower_level)</span>
+<span id="cb28-65"><a href="#cb28-65" aria-hidden="true" tabindex="-1"></a>  upper_bound_3 <span class="ot">=</span> <span class="fu">apply</span>(pred_3, <span class="dv">1</span>, quantile, <span class="at">probs =</span> upper_level)</span>
+<span id="cb28-66"><a href="#cb28-66" aria-hidden="true" tabindex="-1"></a>  cov_array[i,<span class="st">"ABMRS (gamma=1.2)"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_test <span class="sc">&gt;=</span> lower_bound_3) <span class="sc">&amp;</span> (y_test <span class="sc">&lt;=</span> upper_bound_3))</span>
+<span id="cb28-67"><a href="#cb28-67" aria-hidden="true" tabindex="-1"></a>  bandwidth_array[i,<span class="st">"ABMRS (gamma=1.2)"</span>] <span class="ot">=</span> <span class="fu">mean</span>(upper_bound_3 <span class="sc">-</span> lower_bound_3)</span>
+<span id="cb28-68"><a href="#cb28-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-69"><a href="#cb28-69" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Thin Plate Spline</span></span>
+<span id="cb28-70"><a href="#cb28-70" aria-hidden="true" tabindex="-1"></a>  train_df <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">x1 =</span> x_train[,<span class="dv">1</span>], <span class="at">x2 =</span> x_train[,<span class="dv">2</span>], <span class="at">y =</span> y_obs)</span>
+<span id="cb28-71"><a href="#cb28-71" aria-hidden="true" tabindex="-1"></a>  x_test_df <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">x1 =</span> x_test[,<span class="dv">1</span>], <span class="at">x2 =</span> x_test[,<span class="dv">2</span>])</span>
+<span id="cb28-72"><a href="#cb28-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-73"><a href="#cb28-73" aria-hidden="true" tabindex="-1"></a>  model_tps <span class="ot">=</span> <span class="fu">gam</span>(y<span class="sc">~</span><span class="fu">s</span>(x1, x2, <span class="at">k =</span> <span class="dv">200</span>), <span class="at">data =</span> train_df)</span>
+<span id="cb28-74"><a href="#cb28-74" aria-hidden="true" tabindex="-1"></a>  pred_tps <span class="ot">=</span> <span class="fu">predict</span>(model_tps, <span class="at">newdata =</span> x_test_df, <span class="at">se.fit =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb28-75"><a href="#cb28-75" aria-hidden="true" tabindex="-1"></a>  y_tps <span class="ot">=</span> pred_tps<span class="sc">$</span>fit</span>
+<span id="cb28-76"><a href="#cb28-76" aria-hidden="true" tabindex="-1"></a>  lower_bound_tps <span class="ot">=</span> pred_tps<span class="sc">$</span>fit <span class="sc">-</span> <span class="fu">qnorm</span>(upper_level)<span class="sc">*</span>pred_tps<span class="sc">$</span>se.fit</span>
+<span id="cb28-77"><a href="#cb28-77" aria-hidden="true" tabindex="-1"></a>  upper_bound_tps <span class="ot">=</span> pred_tps<span class="sc">$</span>fit <span class="sc">+</span> <span class="fu">qnorm</span>(upper_level)<span class="sc">*</span>pred_tps<span class="sc">$</span>se.fit</span>
+<span id="cb28-78"><a href="#cb28-78" aria-hidden="true" tabindex="-1"></a>  mse_array[i,<span class="st">"Thin Plate Spline"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_tps <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb28-79"><a href="#cb28-79" aria-hidden="true" tabindex="-1"></a>  censor_mse_array[i,<span class="st">"Thin Plate Spline"</span>] <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">sort</span>((y_tps <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)[<span class="fu">round</span>(p<span class="sc">*</span>m_test)<span class="sc">:</span><span class="fu">round</span>((<span class="dv">1</span><span class="sc">-</span>p)<span class="sc">*</span>m_test)])</span>
+<span id="cb28-80"><a href="#cb28-80" aria-hidden="true" tabindex="-1"></a>  cov_array[i,<span class="st">"Thin Plate Spline"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_test <span class="sc">&gt;=</span> lower_bound_tps) <span class="sc">&amp;</span> (y_test <span class="sc">&lt;=</span> upper_bound_tps))</span>
+<span id="cb28-81"><a href="#cb28-81" aria-hidden="true" tabindex="-1"></a>  bandwidth_array[i,<span class="st">"Thin Plate Spline"</span>] <span class="ot">=</span> <span class="fu">mean</span>(upper_bound_tps <span class="sc">-</span> lower_bound_tps)</span>
+<span id="cb28-82"><a href="#cb28-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-83"><a href="#cb28-83" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Tensor Product Spline</span></span>
+<span id="cb28-84"><a href="#cb28-84" aria-hidden="true" tabindex="-1"></a>  model_tep <span class="ot">=</span> <span class="fu">gam</span>(y<span class="sc">~</span><span class="fu">te</span>(x1, x2, <span class="at">k =</span> <span class="dv">15</span>), <span class="at">data =</span> train_df)</span>
+<span id="cb28-85"><a href="#cb28-85" aria-hidden="true" tabindex="-1"></a>  pred_tep <span class="ot">=</span> <span class="fu">predict</span>(model_tep, <span class="at">newdata =</span> x_test_df, <span class="at">se.fit =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb28-86"><a href="#cb28-86" aria-hidden="true" tabindex="-1"></a>  y_tep <span class="ot">=</span> pred_tep<span class="sc">$</span>fit</span>
+<span id="cb28-87"><a href="#cb28-87" aria-hidden="true" tabindex="-1"></a>  lower_bound_tep <span class="ot">=</span> pred_tep<span class="sc">$</span>fit <span class="sc">-</span> <span class="fu">qnorm</span>(upper_level)<span class="sc">*</span>pred_tep<span class="sc">$</span>se.fit</span>
+<span id="cb28-88"><a href="#cb28-88" aria-hidden="true" tabindex="-1"></a>  upper_bound_tep <span class="ot">=</span> pred_tep<span class="sc">$</span>fit <span class="sc">+</span> <span class="fu">qnorm</span>(upper_level)<span class="sc">*</span>pred_tep<span class="sc">$</span>se.fit</span>
+<span id="cb28-89"><a href="#cb28-89" aria-hidden="true" tabindex="-1"></a>  mse_array[i,<span class="st">"Tensor Product Spline"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_tep <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb28-90"><a href="#cb28-90" aria-hidden="true" tabindex="-1"></a>  censor_mse_array[i,<span class="st">"Tensor Product Spline"</span>] <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">sort</span>((y_tep <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)[<span class="fu">round</span>(p<span class="sc">*</span>m_test)<span class="sc">:</span><span class="fu">round</span>((<span class="dv">1</span><span class="sc">-</span>p)<span class="sc">*</span>m_test)])</span>
+<span id="cb28-91"><a href="#cb28-91" aria-hidden="true" tabindex="-1"></a>  cov_array[i,<span class="st">"Tensor Product Spline"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_test <span class="sc">&gt;=</span> lower_bound_tep) <span class="sc">&amp;</span> (y_test <span class="sc">&lt;=</span> upper_bound_tep))</span>
+<span id="cb28-92"><a href="#cb28-92" aria-hidden="true" tabindex="-1"></a>  bandwidth_array[i,<span class="st">"Tensor Product Spline"</span>] <span class="ot">=</span> <span class="fu">mean</span>(upper_bound_tep <span class="sc">-</span> lower_bound_tep)</span>
+<span id="cb28-93"><a href="#cb28-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-94"><a href="#cb28-94" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Gaussian Process Regression</span></span>
+<span id="cb28-95"><a href="#cb28-95" aria-hidden="true" tabindex="-1"></a>  gp_model <span class="ot">=</span> <span class="fu">gpkm</span>(<span class="at">X =</span> x_train, <span class="at">Z =</span> y_obs, <span class="at">kernel =</span> <span class="fu">k_Matern52</span>(<span class="at">D =</span> <span class="dv">2</span>))</span>
+<span id="cb28-96"><a href="#cb28-96" aria-hidden="true" tabindex="-1"></a>  pred_gp <span class="ot">=</span> gp_model<span class="sc">$</span><span class="fu">pred</span>(x_test, <span class="at">se =</span> <span class="cn">TRUE</span>, <span class="at">mean_dist =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb28-97"><a href="#cb28-97" aria-hidden="true" tabindex="-1"></a>  mse_array[i,<span class="st">"Gaussian Process"</span>] <span class="ot">=</span> <span class="fu">mean</span>((pred_gp<span class="sc">$</span>mean <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb28-98"><a href="#cb28-98" aria-hidden="true" tabindex="-1"></a>  censor_mse_array[i,<span class="st">"Gaussian Process"</span>] <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">sort</span>((pred_gp<span class="sc">$</span>mean <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)[<span class="fu">round</span>(p<span class="sc">*</span>m_test)<span class="sc">:</span><span class="fu">round</span>((<span class="dv">1</span><span class="sc">-</span>p)<span class="sc">*</span>m_test)])</span>
+<span id="cb28-99"><a href="#cb28-99" aria-hidden="true" tabindex="-1"></a>  lower_bound_gp <span class="ot">=</span> pred_gp<span class="sc">$</span>mean <span class="sc">-</span> <span class="fu">qnorm</span>(upper_level)<span class="sc">*</span>pred_gp<span class="sc">$</span>se</span>
+<span id="cb28-100"><a href="#cb28-100" aria-hidden="true" tabindex="-1"></a>  upper_bound_gp <span class="ot">=</span> pred_gp<span class="sc">$</span>mean <span class="sc">+</span> <span class="fu">qnorm</span>(upper_level)<span class="sc">*</span>pred_gp<span class="sc">$</span>se</span>
+<span id="cb28-101"><a href="#cb28-101" aria-hidden="true" tabindex="-1"></a>  cov_array[i,<span class="st">"Gaussian Process"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_test <span class="sc">&gt;=</span> lower_bound_gp) <span class="sc">&amp;</span> (y_test <span class="sc">&lt;=</span> upper_bound_gp))</span>
+<span id="cb28-102"><a href="#cb28-102" aria-hidden="true" tabindex="-1"></a>  bandwidth_array[i,<span class="st">"Gaussian Process"</span>] <span class="ot">=</span> <span class="fu">mean</span>(upper_bound_gp <span class="sc">-</span> lower_bound_gp)</span>
+<span id="cb28-103"><a href="#cb28-103" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-104"><a href="#cb28-104" aria-hidden="true" tabindex="-1"></a>  <span class="co"># BASS</span></span>
+<span id="cb28-105"><a href="#cb28-105" aria-hidden="true" tabindex="-1"></a>  bass <span class="ot">=</span> <span class="fu">bass</span>(<span class="at">xx =</span> x_train, <span class="at">y =</span> y_obs, <span class="at">nmcmc =</span> <span class="dv">10000</span>, <span class="at">nburn =</span> <span class="dv">9000</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb28-106"><a href="#cb28-106" aria-hidden="true" tabindex="-1"></a>  pred_bass <span class="ot">=</span> <span class="fu">predict</span>(bass, x_test)</span>
+<span id="cb28-107"><a href="#cb28-107" aria-hidden="true" tabindex="-1"></a>  y_bass <span class="ot">=</span> <span class="fu">colMeans</span>(pred_bass)</span>
+<span id="cb28-108"><a href="#cb28-108" aria-hidden="true" tabindex="-1"></a>  mse_array[i,<span class="st">"BASS"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_bass <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb28-109"><a href="#cb28-109" aria-hidden="true" tabindex="-1"></a>  censor_mse_array[i,<span class="st">"BASS"</span>] <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">sort</span>((y_bass <span class="sc">-</span> y_test)<span class="sc">^</span><span class="dv">2</span>)[<span class="fu">round</span>(p<span class="sc">*</span>m_test)<span class="sc">:</span><span class="fu">round</span>((<span class="dv">1</span><span class="sc">-</span>p)<span class="sc">*</span>m_test)])</span>
+<span id="cb28-110"><a href="#cb28-110" aria-hidden="true" tabindex="-1"></a>  lower_bound_bass <span class="ot">=</span> <span class="fu">apply</span>(pred_bass, <span class="dv">2</span>, quantile, <span class="at">probs =</span> lower_level)</span>
+<span id="cb28-111"><a href="#cb28-111" aria-hidden="true" tabindex="-1"></a>  upper_bound_bass <span class="ot">=</span> <span class="fu">apply</span>(pred_bass, <span class="dv">2</span>, quantile, <span class="at">probs =</span> upper_level)</span>
+<span id="cb28-112"><a href="#cb28-112" aria-hidden="true" tabindex="-1"></a>  cov_array[i,<span class="st">"BASS"</span>] <span class="ot">=</span> <span class="fu">mean</span>((y_test <span class="sc">&gt;=</span> lower_bound_bass) <span class="sc">&amp;</span> (y_test <span class="sc">&lt;=</span> upper_bound_bass))</span>
+<span id="cb28-113"><a href="#cb28-113" aria-hidden="true" tabindex="-1"></a>  bandwidth_array[i,<span class="st">"BASS"</span>] <span class="ot">=</span> <span class="fu">mean</span>(upper_bound_bass <span class="sc">-</span> lower_bound_bass)</span>
+<span id="cb28-114"><a href="#cb28-114" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Running Case 1 
+Running Case 2 
+Running Case 3 
+Running Case 4 
+Running Case 5 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>time.end <span class="ot">=</span> <span class="fu">Sys.time</span>()</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(time.end<span class="sc">-</span>time.start)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Time difference of 3.622921 mins</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mse_array)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       ABMRS (gamma=0.8) ABMRS (gamma=1) ABMRS (gamma=1.2) Thin Plate Spline
+Case 1       0.006573746     0.006591420       0.006580597        0.01269953
+Case 2       0.006710799     0.006709365       0.006708163        0.01310583
+Case 3       0.010762405     0.010745647       0.010709951        0.12813305
+Case 4       0.017284936     0.017746653       0.017192178        0.02335080
+Case 5       4.267594596     1.928121856       1.310897891        0.02291215
+       Tensor Product Spline Gaussian Process        BASS
+Case 1           0.004891019      0.004690197 0.006405761
+Case 2           0.009463704      0.009760253 0.019153271
+Case 3           0.063023043      0.063199817 0.130134970
+Case 4           0.016312239      0.011126283 0.011930281
+Case 5           0.018741941      0.016157785 0.265181679</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(censor_mse_array)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       ABMRS (gamma=0.8) ABMRS (gamma=1) ABMRS (gamma=1.2) Thin Plate Spline
+Case 1       0.003151762     0.003181042       0.003179282       0.005986830
+Case 2       0.004309856     0.004322835       0.004269877       0.004656907
+Case 3       0.008620416     0.008633421       0.008578168       0.026227474
+Case 4       0.012177060     0.012521771       0.012130538       0.017786215
+Case 5       0.021450759     0.020168403       0.019434257       0.013798293
+       Tensor Product Spline Gaussian Process        BASS
+Case 1           0.004238584      0.002562696 0.003175327
+Case 2           0.004444681      0.003665268 0.011944339
+Case 3           0.016566414      0.013494618 0.041391628
+Case 4           0.013546411      0.008768260 0.010256367
+Case 5           0.012339338      0.011183984 0.082581101</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(cov_array)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       ABMRS (gamma=0.8) ABMRS (gamma=1) ABMRS (gamma=1.2) Thin Plate Spline
+Case 1             0.960           0.960             0.960             0.956
+Case 2             0.964           0.948             0.972             0.960
+Case 3             0.792           0.788             0.796             0.928
+Case 4             0.836           0.836             0.828             0.944
+Case 5             0.948           0.920             0.928             0.960
+       Tensor Product Spline Gaussian Process  BASS
+Case 1                 0.928            0.976 0.872
+Case 2                 0.976            0.980 0.592
+Case 3                 0.956            0.968 0.548
+Case 4                 0.996            0.996 0.752
+Case 5                 0.972            0.972 0.648</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(bandwidth_array)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       ABMRS (gamma=0.8) ABMRS (gamma=1) ABMRS (gamma=1.2) Thin Plate Spline
+Case 1         0.2350321       0.2338431         0.2337760         0.3308381
+Case 2         0.2885817       0.2856923         0.2908199         0.2953561
+Case 3         0.2756639       0.2758083         0.2768790         0.5480780
+Case 4         0.3315729       0.3341348         0.3288344         0.5114180
+Case 5         2.4088705       1.5439837         1.2824452         0.5652886
+       Tensor Product Spline Gaussian Process      BASS
+Case 1             0.2629887        0.2220867 0.1670817
+Case 2             0.3076499        0.2856589 0.2017311
+Case 3             0.5324677        0.5286928 0.2508487
+Case 4             0.5602278        0.4653902 0.2674525
+Case 5             0.6169800        0.6214447 0.5243114</code></pre>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

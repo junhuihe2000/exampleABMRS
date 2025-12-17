@@ -1,37 +1,37 @@
 "case","n_train","method","mean","sd"
-"Case 1",200,"ABMRS-1",0.151,0.076
-"Case 1",200,"ABMRS-2",0.162,0.082
-"Case 1",200,"ABMRS-3",0.2,0.113
-"Case 1",200,"BARS",0.183,0.118
-"Case 1",200,"Gaussian Process",0.2,0.56
-"Case 1",200,"Smooth Spline",0.143,0.082
-"Case 1",500,"ABMRS-1",0.065,0.035
-"Case 1",500,"ABMRS-2",0.063,0.034
-"Case 1",500,"ABMRS-3",0.064,0.04
-"Case 1",500,"BARS",0.087,0.039
-"Case 1",500,"Gaussian Process",0.045,0.029
-"Case 1",500,"Smooth Spline",0.067,0.038
-"Case 2",200,"ABMRS-1",2.242,1.848
-"Case 2",200,"ABMRS-2",2.128,1.942
-"Case 2",200,"ABMRS-3",2.08,1.917
-"Case 2",200,"BARS",2.353,3.37
-"Case 2",200,"Gaussian Process",9.285,3.305
-"Case 2",200,"Smooth Spline",8.343,3.058
-"Case 2",500,"ABMRS-1",0.917,0.786
-"Case 2",500,"ABMRS-2",0.968,0.733
-"Case 2",500,"ABMRS-3",1.043,0.775
-"Case 2",500,"BARS",0.947,1.09
-"Case 2",500,"Gaussian Process",7.044,8.463
-"Case 2",500,"Smooth Spline",5.193,1.548
-"Case 3",200,"ABMRS-1",0.483,0.195
-"Case 3",200,"ABMRS-2",0.64,0.633
-"Case 3",200,"ABMRS-3",2.591,1.294
-"Case 3",200,"BARS",3.074,0.634
-"Case 3",200,"Gaussian Process",1,0.958
-"Case 3",200,"Smooth Spline",0.662,0.178
-"Case 3",500,"ABMRS-1",0.184,0.051
-"Case 3",500,"ABMRS-2",0.195,0.054
-"Case 3",500,"ABMRS-3",0.213,0.06
-"Case 3",500,"BARS",0.508,0.596
-"Case 3",500,"Gaussian Process",0.597,0.746
-"Case 3",500,"Smooth Spline",0.386,0.067
+"Case 1",200,"ABMRS-1",0.378,0.092
+"Case 1",200,"ABMRS-2",0.391,0.099
+"Case 1",200,"ABMRS-3",0.43,0.122
+"Case 1",200,"BARS",0.411,0.119
+"Case 1",200,"Gaussian Process",0.365,0.261
+"Case 1",200,"Smooth Spline",0.364,0.1
+"Case 1",500,"ABMRS-1",0.245,0.069
+"Case 1",500,"ABMRS-2",0.242,0.068
+"Case 1",500,"ABMRS-3",0.242,0.072
+"Case 1",500,"BARS",0.288,0.063
+"Case 1",500,"Gaussian Process",0.202,0.065
+"Case 1",500,"Smooth Spline",0.249,0.071
+"Case 2",200,"ABMRS-1",1.385,0.574
+"Case 2",200,"ABMRS-2",1.328,0.61
+"Case 2",200,"ABMRS-3",1.314,0.601
+"Case 2",200,"BARS",1.29,0.839
+"Case 2",200,"Gaussian Process",2.999,0.547
+"Case 2",200,"Smooth Spline",2.838,0.542
+"Case 2",500,"ABMRS-1",0.886,0.368
+"Case 2",500,"ABMRS-2",0.918,0.356
+"Case 2",500,"ABMRS-3",0.957,0.359
+"Case 2",500,"BARS",0.869,0.443
+"Case 2",500,"Gaussian Process",2.511,0.868
+"Case 2",500,"Smooth Spline",2.254,0.339
+"Case 3",200,"ABMRS-1",0.68,0.143
+"Case 3",200,"ABMRS-2",0.751,0.278
+"Case 3",200,"ABMRS-3",1.533,0.496
+"Case 3",200,"BARS",1.742,0.202
+"Case 3",200,"Gaussian Process",0.936,0.356
+"Case 3",200,"Smooth Spline",0.806,0.11
+"Case 3",500,"ABMRS-1",0.425,0.058
+"Case 3",500,"ABMRS-2",0.437,0.061
+"Case 3",500,"ABMRS-3",0.457,0.064
+"Case 3",500,"BARS",0.615,0.364
+"Case 3",500,"Gaussian Process",0.713,0.301
+"Case 3",500,"Smooth Spline",0.619,0.052

@@ -1,0 +1,71 @@
+"case","n_train","method","mean","sd"
+"Case 1",250,"ABMRS (gamma=0.8)",0.059,0.012
+"Case 1",250,"ABMRS (gamma=1.2)",0.059,0.012
+"Case 1",250,"ABMRS (gamma=1)",0.059,0.012
+"Case 1",250,"BASS",0.042,0.015
+"Case 1",250,"Gaussian Process",0.053,0.01
+"Case 1",250,"Tensor Product Spline",0.04,0.015
+"Case 1",250,"Thin Plate Spline",0.073,0.011
+"Case 1",1000,"ABMRS (gamma=0.8)",0.027,0.005
+"Case 1",1000,"ABMRS (gamma=1.2)",0.027,0.005
+"Case 1",1000,"ABMRS (gamma=1)",0.027,0.005
+"Case 1",1000,"BASS",0.022,0.007
+"Case 1",1000,"Gaussian Process",0.025,0.005
+"Case 1",1000,"Tensor Product Spline",0.016,0.006
+"Case 1",1000,"Thin Plate Spline",0.039,0.004
+"Case 2",250,"ABMRS (gamma=0.8)",0.072,0.009
+"Case 2",250,"ABMRS (gamma=1.2)",0.073,0.01
+"Case 2",250,"ABMRS (gamma=1)",0.072,0.01
+"Case 2",250,"BASS",0.113,0.016
+"Case 2",250,"Gaussian Process",0.067,0.008
+"Case 2",250,"Tensor Product Spline",0.075,0.012
+"Case 2",250,"Thin Plate Spline",0.074,0.009
+"Case 2",1000,"ABMRS (gamma=0.8)",0.038,0.005
+"Case 2",1000,"ABMRS (gamma=1.2)",0.038,0.005
+"Case 2",1000,"ABMRS (gamma=1)",0.038,0.005
+"Case 2",1000,"BASS",0.07,0.006
+"Case 2",1000,"Gaussian Process",0.038,0.005
+"Case 2",1000,"Tensor Product Spline",0.043,0.005
+"Case 2",1000,"Thin Plate Spline",0.044,0.005
+"Case 3",250,"ABMRS (gamma=0.8)",0.085,0.011
+"Case 3",250,"ABMRS (gamma=1.2)",0.085,0.011
+"Case 3",250,"ABMRS (gamma=1)",0.085,0.011
+"Case 3",250,"BASS",0.205,0.03
+"Case 3",250,"Gaussian Process",0.114,0.012
+"Case 3",250,"Tensor Product Spline",0.114,0.014
+"Case 3",250,"Thin Plate Spline",0.15,0.018
+"Case 3",1000,"ABMRS (gamma=0.8)",0.056,0.006
+"Case 3",1000,"ABMRS (gamma=1.2)",0.06,0.005
+"Case 3",1000,"ABMRS (gamma=1)",0.059,0.005
+"Case 3",1000,"BASS",0.096,0.007
+"Case 3",1000,"Gaussian Process",0.055,0.005
+"Case 3",1000,"Tensor Product Spline",0.059,0.005
+"Case 3",1000,"Thin Plate Spline",0.076,0.006
+"Case 4",250,"ABMRS (gamma=0.8)",0.109,0.011
+"Case 4",250,"ABMRS (gamma=1.2)",0.109,0.011
+"Case 4",250,"ABMRS (gamma=1)",0.109,0.011
+"Case 4",250,"BASS",0.109,0.014
+"Case 4",250,"Gaussian Process",0.101,0.012
+"Case 4",250,"Tensor Product Spline",0.121,0.012
+"Case 4",250,"Thin Plate Spline",0.128,0.012
+"Case 4",1000,"ABMRS (gamma=0.8)",0.058,0.007
+"Case 4",1000,"ABMRS (gamma=1.2)",0.059,0.007
+"Case 4",1000,"ABMRS (gamma=1)",0.059,0.007
+"Case 4",1000,"BASS",0.064,0.006
+"Case 4",1000,"Gaussian Process",0.054,0.005
+"Case 4",1000,"Tensor Product Spline",0.063,0.004
+"Case 4",1000,"Thin Plate Spline",0.069,0.005
+"Case 5",250,"ABMRS (gamma=0.8)",0.119,0.022
+"Case 5",250,"ABMRS (gamma=1.2)",0.122,0.021
+"Case 5",250,"ABMRS (gamma=1)",0.121,0.021
+"Case 5",250,"BASS",0.296,0.058
+"Case 5",250,"Gaussian Process",0.118,0.012
+"Case 5",250,"Tensor Product Spline",0.123,0.014
+"Case 5",250,"Thin Plate Spline",0.129,0.013
+"Case 5",1000,"ABMRS (gamma=0.8)",0.057,0.008
+"Case 5",1000,"ABMRS (gamma=1.2)",0.059,0.009
+"Case 5",1000,"ABMRS (gamma=1)",0.058,0.009
+"Case 5",1000,"BASS",0.115,0.009
+"Case 5",1000,"Gaussian Process",0.062,0.005
+"Case 5",1000,"Tensor Product Spline",0.066,0.005
+"Case 5",1000,"Thin Plate Spline",0.069,0.005

@@ -11,99 +11,86 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ```{r package}
 library(ggplot2)
-library(EBARS)
+library(ABMRS)
 library(ggpubr)
 library(splines)
 ```
 
 
-## Read and Display Data
+# Read and Display Data
 
 ```{r data}
 # read data
-triceps = read.csv('../datasets/triceps/triceps.csv')
+triceps = read.csv('datasets/triceps/triceps.csv')
 # plot
 p_data = ggplot(triceps, aes(age, lntriceps)) + geom_point(shape = 1) + ylim(1.0, 4.0) + xlab('Age in years') + ylab('Triceps skinfold thickness in mm (log)')
-pdf(file=file.path("figures","triceps_truth.pdf"),width=8,height=6)
+pdf(file=file.path("figures/triceps","triceps_truth.pdf"),width=8,height=6)
 p_data
+dev.off()
+```
+
+# Knot Inference
+
+```{r knot-inference}
+set.seed(1234) # set random seed
+# ABMRS
+ebars_model = ebars(triceps$age, triceps$lntriceps, degree = 1, times=2, gamma = 1)
+ebars_model$rjmcmc(burns=20000, steps=20000)
+knot_samples = ebars_model$knots()
+counts = sapply(knot_samples, function(xi) {return(length(xi))}) # calculate the number of knots
+nodes = unlist(knot_samples) # calculate the posterior distribution
+
+# plot counts
+p_1 = ggplot(mapping=aes(x=counts)) + geom_bar(aes(y=after_stat(prop)), width = 0.6) + ylab("Proportion") + xlab("Number of Knots") + geom_vline(aes(xintercept=mean(counts)), color="red", linetype="dashed") + scale_x_continuous(breaks=1:6) + theme_classic()
+# plot nodes
+p_2 = ggplot(mapping=aes(x=nodes)) + geom_density(adjust=1) + ylab("Density") + xlab("Age in Years") + theme_classic()
+
+pdf(file=file.path("figures/triceps","knot_inference_triceps_1.pdf"),width=8,height=2)
+ggarrange(p_1,p_2,ncol=2,align="hv")
 dev.off()
 ```
 
 ```{r knot-inference}
 set.seed(1234) # set random seed
-# EBARS
-ebars_model = ebars(triceps$age, triceps$lntriceps, degree = 1, n = 1000, gamma = 2)
-ebars_model$mcmc(burns=5000, steps=5000)
-knot_samples = ebars_model$samples()
+# ABMRS
+ebars_model = ebars(triceps$age, triceps$lntriceps, degree = 1, times=2, gamma = 1.5)
+ebars_model$rjmcmc(burns=20000, steps=20000)
+knot_samples = ebars_model$knots()
 counts = sapply(knot_samples, function(xi) {return(length(xi))}) # calculate the number of knots
 nodes = unlist(knot_samples) # calculate the posterior distribution
 
 # plot counts
-p_1 = ggplot(mapping=aes(x=counts)) + geom_bar(aes(y=after_stat(prop)), width = 0.6) + ylab("Frequency") + xlab("The number of knots") + geom_vline(aes(xintercept=mean(counts)), color="red", linetype="dashed") + scale_x_discrete(limits=factor(1:5))
+p_1 = ggplot(mapping=aes(x=counts)) + geom_bar(aes(y=after_stat(prop)), width = 0.6) + ylab("Proportion") + xlab("Number of Knots") + geom_vline(aes(xintercept=mean(counts)), color="red", linetype="dashed") + scale_x_continuous(breaks=1:6) + theme_classic()
 # plot nodes
-p_2 = ggplot(mapping=aes(x=nodes)) + geom_density(adjust=1) + ylab("Probability density") + xlab("Age in years")
+p_2 = ggplot(mapping=aes(x=nodes)) + geom_density(adjust=1) + ylab("Density") + xlab("Age in Years") + theme_classic()
 
-pdf(file=file.path("figures","knot_inference_triceps.pdf"),width=8,height=2)
+pdf(file=file.path("figures/triceps","knot_inference_triceps_2.pdf"),width=8,height=2)
 ggarrange(p_1,p_2,ncol=2,align="hv")
 dev.off()
 ```
 
-```{r DIC}
-m = nrow(triceps)
 
-compute_deviance <- function(node) {
-  B = bs(x = triceps$age, knots = node, degree = 1, intercept = TRUE)
-  fitted_lm = glm(triceps$lntriceps~B-1)
-  return(m*log(mean(fitted_lm$residuals^2)) + ncol(B)*log(m) + m*log(2*pi) + m)
-}
-
-set.seed(1234)
-mean_devs = rep(NA, 6)
-dev_means = rep(NA, 6)
-for(k in 1:6) {
-  ebars_model = ebars(triceps$age, triceps$lntriceps, degree = 1, k = k, n = 1000)
-  ebars_model$mcmc(burns=8000, steps=1000)
-  nodes_mat = sapply(ebars_model$samples(), function(xi) {return(xi)})
-  if(k==1) {nodes_mat = rbind(nodes_mat)}
-  mean_devs[k] = mean(apply(nodes_mat, 2, compute_deviance))
-  # deviance of posterior mean
-  node_mean = rowMeans(nodes_mat)
-  dev_means[k] = compute_deviance(node_mean)
-}
-# compute deviance information criterion
-dics = 2*mean_devs - dev_means
-```
-
-```{r}
-plot(dics)
-```
-
-```{r}
-plot(dev_means)
-```
-
-```{r}
-plot(mean_devs)
-```
-
+# Regression and Hypothesis Testing
 
 
 ```{r regression}
 set.seed(1234)
 # fix the number of knots
-ebars_model = ebars(triceps$age, triceps$lntriceps, degree = 1, k = 2, n = 1000)
-ebars_model$mcmc(burns=5000, steps=5000)
-nodes_mat = sapply(ebars_model$samples(), function(xi) {return(xi)})
+ebars_model = ebars(triceps$age, triceps$lntriceps, degree = 1, k = 2, times = 2)
+ebars_model$rjmcmc(burns=20000, steps=20000)
+nodes_mat = sapply(ebars_model$knots(), function(xi) {return(xi)})
 # predict
-y_hat = ebars_model$predict(triceps$age)
-# knot distribution
-ggplot(mapping=aes(x=c(nodes_mat))) + geom_density(adjust=1) + ylab("") + xlab("")
+pred = ebars_model$predict(triceps$age)
+y_hat = rowMeans(pred)
 ```
 
 ```{r hypothsis-testing}
 # mean and standard deviation of estimated knots
 node = rowMeans(nodes_mat)
+print(node)
 node_sd = apply(nodes_mat, 1, sd)
+print(node_sd)
+node_quantiles = apply(nodes_mat, 1, quantile, probs=c(0.025,0.975))
 # generate truncated power series
 U = outer(triceps$age, rep(1,3))
 K = outer(rep(1,892), c(0, node))
@@ -116,8 +103,10 @@ summary(fitted_model)
 ```{r plot, include=FALSE}
 y_hat = fitted_model$fitted.values
 # plot
-p_fit = p_data + geom_line(aes(age, y_hat), color = 'red') + geom_vline(aes(xintercept=node[1]), linetype="dashed") + geom_vline(aes(xintercept=node[2]), linetype="dashed")
-pdf(file=file.path("figures","triceps.pdf"),width=8,height=6)
+p_fit = p_data + geom_line(aes(age, y_hat), color = 'red') + geom_vline(aes(xintercept=node[1]), linetype="solid") + geom_vline(aes(xintercept=node[2]), linetype="solid") +
+  geom_vline(aes(xintercept=node_quantiles[1,1]), linetype="dashed") + geom_vline(aes(xintercept=node_quantiles[1,2]), linetype="dashed") +
+  geom_vline(aes(xintercept=node_quantiles[2,1]), linetype="dashed") + geom_vline(aes(xintercept=node_quantiles[2,2]), linetype="dashed")
+pdf(file=file.path("figures/triceps","triceps.pdf"),width=8,height=6)
 p_fit
 dev.off()
 ```

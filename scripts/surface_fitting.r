@@ -60,7 +60,7 @@ f2 <- function(x) {
   xi_1 <- c(0.2, 0.5)
   xi_2 <- c(0.4, 0.4, 0.4, 0.4, 0.7)
   beta <- c(-1.21, 0.28, 1.08, -2.35, 0.43, 0.51, -0.57, -0.55, -0.56, -0.89, -0.48, -1.00, -0.78, 0.06, 0.96, -0.11, -0.51, -0.91, -0.84, 2.42, 0.13, -0.49, -0.44, 0.46, -0.69, -1.45, 0.57, -1.02, -0.02, -0.94, 1.10, -0.48, -0.71, -0.50, -1.63, -1.17, -2.18, -1.34, -0.29, -0.47)
-  B <- tensor_spline(x, list(xi_1, xi_2), c(3, 3), c(FALSE, FALSE))
+  B <- tensor_spline(x, list(xi_1, xi_2), c(3, 3), c(FALSE, FALSE), c(0 , 0), c(1, 1))
   c(20 * B %*% cbind(beta))
 }
 
@@ -68,7 +68,7 @@ f3 <- function(x) {
   xi_1 <- c(0.2, 0.2, 0.2, 0.2, 0.6)
   xi_2 <- c(0.5, 0.5, 0.5, 0.5, 0.7)
   beta <- c(0.83, -0.28, -0.36, 0.09, 2.25, 0.83, 1.31, 2.50, 1.17, -0.43, -1.00, -1.11, -0.06, 1.17, 1.05, 0.06, -0.74, 0.93, 1.67, 0.56, -0.75, 1.26, 0.04, 0.19, 0.46, -0.43, 0.02, 0.70, 0.97, -0.62, -0.86, 0.07, -1.05, -2.75, -1.13, -0.86, 1.56, 1.02, 1.04, -1.12, -1.07, 0.97, 0.17, -0.90, 0.16, -0.50, -0.97, -0.11, 1.09, -1.21, -1.77, -0.49, 0.32, 1.46, 1.54, -0.34, -1.08, -1.49, -0.25, -0.12, -0.65, 0.31, 0.12, -0.84)
-  B <- tensor_spline(x, list(xi_1, xi_2), c(3, 3), c(FALSE, FALSE))
+  B <- tensor_spline(x, list(xi_1, xi_2), c(3, 3), c(FALSE, FALSE), c(0 , 0), c(1, 1))
   c(20 * B %*% cbind(beta))
 }
 
@@ -136,6 +136,8 @@ for (k in seq_len(rep_count)) {
 
     x_train <- cbind(runif(m_train, 0, 1), runif(m_train, 0, 1))
     x_test <- cbind(runif(m_test, 0, 1), runif(m_test, 0, 1))
+    xmin <- c(0, 0)
+    xmax <- c(1, 1)
 
     for (i in seq_along(fs)) {
       row_idx <- row_offset + i
@@ -151,7 +153,7 @@ for (k in seq_len(rep_count)) {
       censor_hi <- min(m_test, round((1 - p) * m_test))
 
       # ABMRS with gamma = 0.8
-      mebars_1 <- mebars(x_train, y_obs, gamma = 0.8, times = c(2, 2))
+      mebars_1 <- mebars(x_train, y_obs, xmin, xmax, gamma = 0.8, times = c(2, 2))
       mebars_1$rjmcmc(burns = 20000, steps = 20000)
       pred_1 <- mebars_1$predict(x_test)
       y_mebars_1 <- rowMeans(pred_1)
@@ -163,7 +165,7 @@ for (k in seq_len(rep_count)) {
       bandwidth_array[row_idx, "ABMRS (gamma=0.8)", k] <- mean(upper_bound_1 - lower_bound_1)
 
       # ABMRS with gamma = 1
-      mebars_2 <- mebars(x_train, y_obs, gamma = 1, times = c(2, 2))
+      mebars_2 <- mebars(x_train, y_obs, xmin, xmax, gamma = 1, times = c(2, 2))
       mebars_2$rjmcmc(burns = 20000, steps = 20000)
       pred_2 <- mebars_2$predict(x_test)
       y_mebars_2 <- rowMeans(pred_2)
@@ -175,7 +177,7 @@ for (k in seq_len(rep_count)) {
       bandwidth_array[row_idx, "ABMRS (gamma=1)", k] <- mean(upper_bound_2 - lower_bound_2)
 
       # ABMRS with gamma = 1.2
-      mebars_3 <- mebars(x_train, y_obs, gamma = 1.2, times = c(2, 2))
+      mebars_3 <- mebars(x_train, y_obs, xmin, xmax, gamma = 1.2, times = c(2, 2))
       mebars_3$rjmcmc(burns = 20000, steps = 20000)
       pred_3 <- mebars_3$predict(x_test)
       y_mebars_3 <- rowMeans(pred_3)

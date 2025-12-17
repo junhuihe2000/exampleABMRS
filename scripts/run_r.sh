@@ -1,15 +1,15 @@
 #!/bin/bash
-#SBATCH --job-name=surface_fitting
+#SBATCH --job-name=ki
 #SBATCH --account=jiankang1
 #SBATCH --partition=standard
-#SBATCH --time=10:00:00
+#SBATCH --time=20:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem-per-cpu=20g
 #SBATCH --output=/home/%u/R/ABMRS/log/output-%x-%A_%a.log
 #SBATCH --error=/home/%u/R/ABMRS/log/error-%x-%A_%a.log
-#SBATCH --array=1-10
+#SBATCH --array=1-20
 
 module load R/4.4.0  # Load the R module if needed
 
@@ -19,12 +19,12 @@ export R_LIBS_SITE="/sw/pkgs/arc/stacks/gcc/13.2.0/Rtidyverse/4.4.0/2024-05-11" 
 export R_LIBS_USER="/home/hejunhui/R/x86_64-pc-linux-gnu-library/4.4"                           # your personal installs
 export R_LIBS="$R_LIBS_USER:$R_LIBS_SITE:$R_LIBS_BASE"
 
-SCRIPT_PATH="/home/hejunhui/R/ABMRS/scripts/surface_fitting.r"  # Path to the R script
+SCRIPT_PATH="/home/hejunhui/R/ABMRS/scripts/knot_inference.r"  # Path to the R script
 
 # Adjust these if you want a different number of replicates per array task
-REPS_PER_TASK=${REPS_PER_TASK:-5}
+REPS_PER_TASK=${REPS_PER_TASK:-50}
 
-echo "Starting surface_fitting task ${SLURM_ARRAY_TASK_ID} with ${REPS_PER_TASK} replicates"
+echo "Starting knot_inference task ${SLURM_ARRAY_TASK_ID} with ${REPS_PER_TASK} replicates"
 
 srun Rscript $SCRIPT_PATH ${SLURM_ARRAY_TASK_ID} ${REPS_PER_TASK}
 

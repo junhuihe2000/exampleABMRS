@@ -5,6 +5,10 @@ date: "`r Sys.Date()`"
 format: html
 ---
 
+```{r}
+library(dplyr)
+```
+
 # Summary of Curve Fitting Results
 
 ```{r}
@@ -56,8 +60,8 @@ summarize_metric <- function(df) {
 	res[order(res$case, res$n_train, res$method), ]
 }
 
-mse_df <- array_to_df(mse_files, metric = "mse")
-censor_df <- array_to_df(censor_files, metric = "censor_mse")
+mse_df <- array_to_df(mse_files, metric = "mse") %>% mutate(value = sqrt(value))
+censor_df <- array_to_df(censor_files, metric = "censor_mse") %>% mutate(value = sqrt(value))
 
 mse_summary <- summarize_metric(mse_df)
 censor_summary <- summarize_metric(censor_df)
@@ -70,8 +74,8 @@ censor_tex <- knitr::kable(censor_summary, format = "latex", booktabs = TRUE, ca
 write.csv(censor_summary, file = file.path(table_dir, "censor_mse_summary.csv"), row.names = FALSE)
 
 # Print LaTeX to the document as-is (useful when rendering to PDF)
-cat(mse_tex, sep = "\n")
-cat(censor_tex, sep = "\n")
+# cat(mse_tex, sep = "\n")
+# cat(censor_tex, sep = "\n")
 ```
 
 ```{r}
@@ -133,8 +137,8 @@ summarize_metric <- function(df) {
 	res[order(res$case, res$n_train, res$method), ]
 }
 
-mse_df <- array_to_df(mse_files, metric = "mse")
-censor_df <- array_to_df(censor_files, metric = "censor_mse")
+mse_df <- array_to_df(mse_files, metric = "mse") %>% mutate(value = sqrt(value))
+censor_df <- array_to_df(censor_files, metric = "censor_mse") %>% mutate(value = sqrt(value))
 cov_df <- array_to_df(cov_files, metric = "coverage")
 bandwidth_df <- array_to_df(bandwidth_files, metric = "bandwidth")
 
@@ -157,10 +161,10 @@ bandwidth_tex <- knitr::kable(bandwidth_summary, format = "latex", booktabs = TR
 write.csv(bandwidth_summary, file = file.path(table_dir, "bandwidth_summary.csv"), row.names = FALSE)
 
 # Print LaTeX to the document as-is (useful when rendering to PDF)
-cat(mse_tex, sep = "\n")
-cat(censor_tex, sep = "\n")
-cat(cov_tex, sep = "\n")
-cat(bandwidth_tex, sep = "\n")
+# cat(mse_tex, sep = "\n")
+# cat(censor_tex, sep = "\n")
+# cat(cov_tex, sep = "\n")
+# cat(bandwidth_tex, sep = "\n")
 ```
 
 ```{r}
@@ -171,4 +175,221 @@ knitr::kable(censor_summary, caption = "Mean and SD of censored MSE (trimmed) ac
 knitr::kable(cov_summary, caption = "Mean and SD of coverage across all surface_fitting experiments")
 
 knitr::kable(bandwidth_summary, caption = "Mean and SD of bandwidth across all surface_fitting experiments")
+```
+
+# Summary of Surface Fitting Appendix Results
+
+```{r}
+# Concatenate surface_fitting_appendix outputs and compute mean/sd by scenario and method
+
+# Paths to saved arrays from the Slurm runs
+out_dir <- "output/surface_fitting_appendix"
+table_dir <- "tables/surface_fitting_appendix"
+if(!dir.exists(table_dir)) {
+    dir.create(table_dir, recursive = TRUE)
+}
+mse_files <- list.files(out_dir, pattern = "^surface_mse_raw_job-\\d+\\.rds$", full.names = TRUE)
+censor_files <- list.files(out_dir, pattern = "^surface_mse_censor_raw_job-\\d+\\.rds$", full.names = TRUE)
+cov_files <- list.files(out_dir, pattern = "^surface_coverage_raw_job-\\d+\\.rds$", full.names = TRUE)
+bandwidth_files <- list.files(out_dir, pattern = "^surface_bandwidth_raw_job-\\d+\\.rds$", full.names = TRUE)
+
+stopifnot(length(mse_files) > 0, length(censor_files) > 0, length(cov_files) > 0, length(bandwidth_files) > 0)
+
+array_to_df <- function(files, metric) {
+	dfs <- lapply(files, function(f) {
+		arr <- readRDS(f)
+		dn <- dimnames(arr)
+		grid <- expand.grid(
+			row = dn[[1]],
+			method = dn[[2]],
+			rep = seq_len(dim(arr)[3]),
+			stringsAsFactors = FALSE
+		)
+		grid$value <- as.vector(arr)
+		grid$file <- basename(f)
+		grid$metric <- metric
+		grid
+	})
+	do.call(rbind, dfs)
+}
+
+summarize_metric <- function(df) {
+	agg <- aggregate(value ~ row + method, data = df, FUN = function(x) c(mean = mean(x, na.rm = TRUE), sd = sd(x, na.rm = TRUE)))
+	res <- cbind(agg[c("row", "method")], agg$value)
+
+	# Parse row label: "Case 1-200" -> case and training size
+	parts <- strsplit(res$row, "-", fixed = TRUE)
+	res$case <- vapply(parts, `[`, "", 1)
+	res$n_train <- as.integer(vapply(parts, `[`, "", 2))
+
+	# Ensure numeric and round to 3 decimal places
+	res$mean <- round(as.numeric(res[["mean"]]), 3)
+	res$sd   <- round(as.numeric(res[["sd"]]), 3)
+
+	res <- res[, c("case", "n_train", "method", "mean", "sd")]
+	res[order(res$case, res$n_train, res$method), ]
+}
+
+mse_df <- array_to_df(mse_files, metric = "mse") %>% mutate(value = sqrt(value))
+censor_df <- array_to_df(censor_files, metric = "censor_mse") %>% mutate(value = sqrt(value))
+cov_df <- array_to_df(cov_files, metric = "coverage")
+bandwidth_df <- array_to_df(bandwidth_files, metric = "bandwidth")
+
+mse_summary <- summarize_metric(mse_df)
+censor_summary <- summarize_metric(censor_df)
+cov_summary <- summarize_metric(cov_df)
+bandwidth_summary <- summarize_metric(bandwidth_df)
+
+# --- write LaTeX tables to files ---
+mse_tex <- knitr::kable(mse_summary, format = "latex", booktabs = TRUE, caption = "Mean and SD of MSE across all surface_fitting experiments")
+write.csv(mse_summary, file = file.path(table_dir, "mse_summary.csv"), row.names = FALSE)
+
+censor_tex <- knitr::kable(censor_summary, format = "latex", booktabs = TRUE, caption = "Mean and SD of censored MSE (trimmed) across all surface_fitting experiments")
+write.csv(censor_summary, file = file.path(table_dir, "censor_mse_summary.csv"), row.names = FALSE)
+
+cov_tex <- knitr::kable(cov_summary, format = "latex", booktabs = TRUE, caption = "Mean and SD of coverage across all surface_fitting experiments")
+write.csv(cov_summary, file = file.path(table_dir, "coverage_summary.csv"), row.names = FALSE)
+
+bandwidth_tex <- knitr::kable(bandwidth_summary, format = "latex", booktabs = TRUE, caption = "Mean and SD of bandwidth across all surface_fitting experiments")
+write.csv(bandwidth_summary, file = file.path(table_dir, "bandwidth_summary.csv"), row.names = FALSE)
+
+# Print LaTeX to the document as-is (useful when rendering to PDF)
+# cat(mse_tex, sep = "\n")
+# cat(censor_tex, sep = "\n")
+# cat(cov_tex, sep = "\n")
+# cat(bandwidth_tex, sep = "\n")
+```
+
+```{r}
+knitr::kable(mse_summary, caption = "Mean and SD of MSE across all surface_fitting experiments")
+
+knitr::kable(censor_summary, caption = "Mean and SD of censored MSE (trimmed) across all surface_fitting experiments")
+
+knitr::kable(cov_summary, caption = "Mean and SD of coverage across all surface_fitting experiments")
+
+knitr::kable(bandwidth_summary, caption = "Mean and SD of bandwidth across all surface_fitting experiments")
+```
+
+
+# Summary of Knot Inference Results
+
+```{r}
+# First, compute coverage and bandwidth from quantiles for each job
+job_ids <- c(1:20)
+for (job_id in job_ids) {
+	job_tag <- sprintf("job-%04d", job_id)
+	quantile_file <- file.path("output/knot_inference", sprintf("knot_quantiles_raw_%s.rds", job_tag))
+	quantile_array <- readRDS(quantile_file)
+	dims = c(dim(quantile_array)[1], dim(quantile_array)[2]/2, dim(quantile_array)[3])
+	case_names <- dimnames(quantile_array)[[1]]
+	cov_names <- c("95%", "75%", "50%")
+	cov_array <- array(NA, dim = dims, dimnames = list(case_names, cov_names, NULL))
+	bandwidth_array <- array(NA, dim = dims, dimnames = list(case_names, cov_names, NULL))
+	xis = list(c(0.5),c(0.3,0.7),c(0.2,0.2,0.5,0.7))
+	xi_vec <- unlist(xis)
+	xi_vec <- rep(xi_vec, 2)
+	xi_mat <- cbind(xi_vec, xi_vec, xi_vec)
+	for (i in seq_len(dim(quantile_array)[3])) {
+		cov <- (xi_mat >= quantile_array[ , 1:3, i]) & (xi_mat <= quantile_array[ , 6:4, i])
+		bandwidth <- quantile_array[ , 6:4, i] - quantile_array[ , 1:3, i]
+		cov_array[, , i] <- cov
+		bandwidth_array[, , i] <- bandwidth
+		# calibration for duplicate knots
+		cov_array[4, , i] <- cov[4, ] | cov[5, ]
+		cov_array[5, , i] <- cov_array[4, , i]
+		bandwidth_array[4, , i] <- bandwidth[4, ] + bandwidth[5, ]
+		bandwidth_array[5, , i] <- bandwidth_array[4, , i]
+		cov_array[11, , i] <- cov[11, ] | cov[12, ]
+		cov_array[12, , i] <- cov_array[11, , i]
+		bandwidth_array[11, , i] <- bandwidth[11, ] + bandwidth[12, ]
+		bandwidth_array[12, , i] <- bandwidth_array[11, , i]
+	}
+	raw_cov_out <- file.path("output/knot_inference", sprintf("knot_coverage_raw_%s.rds", job_tag))
+	raw_bandwidth_out <- file.path("output/knot_inference", sprintf("knot_bandwidth_raw_%s.rds", job_tag))
+	saveRDS(cov_array, file = raw_cov_out)
+	saveRDS(bandwidth_array, file = raw_bandwidth_out)
+}
+```
+
+```{r}
+# Concatenate knot_inference outputs and compute mean/sd by scenario and method
+
+# Paths to saved arrays from the Slurm runs
+out_dir <- "output/knot_inference"
+table_dir <- "tables/knot_inference"
+if(!dir.exists(table_dir)) {
+    dir.create(table_dir, recursive = TRUE)
+}
+error_files <- list.files(out_dir, pattern = "^knot_error_raw_job-\\d+\\.rds$", full.names = TRUE)
+cov_files <- list.files(out_dir, pattern = "^knot_coverage_raw_job-\\d+\\.rds$", full.names = TRUE)
+bandwidth_files <- list.files(out_dir, pattern = "^knot_bandwidth_raw_job-\\d+\\.rds$", full.names = TRUE)
+
+stopifnot(length(error_files) > 0, length(cov_files) > 0, length(bandwidth_files) > 0)
+
+array_to_df <- function(files, metric) {
+	dfs <- lapply(files, function(f) {
+		arr <- readRDS(f)
+		dn <- dimnames(arr)
+		grid <- expand.grid(
+			row = dn[[1]],
+			method = dn[[2]],
+			rep = seq_len(dim(arr)[3]),
+			stringsAsFactors = FALSE
+		)
+		grid$value <- as.vector(arr)
+		grid$file <- basename(f)
+		grid$metric <- metric
+		grid
+	})
+	do.call(rbind, dfs)
+}
+
+summarize_metric <- function(df) {
+	agg <- aggregate(value ~ row + method, data = df, FUN = function(x) c(mean = mean(x, na.rm = TRUE), sd = sd(x, na.rm = TRUE)))
+	res <- cbind(agg[c("row", "method")], agg$value)
+
+	# Parse row label: "Case 1-200" -> case and training size
+	parts <- strsplit(res$row, "-", fixed = TRUE)
+	res$case <- vapply(parts, `[`, "", 1)
+	res$n_train <- as.integer(vapply(parts, `[`, "", 2))
+
+	# Ensure numeric and round to 3 decimal places
+	res$mean <- round(as.numeric(res[["mean"]]), 3)
+	res$sd   <- round(as.numeric(res[["sd"]]), 3)
+
+	res <- res[, c("case", "n_train", "method", "mean", "sd")]
+	res[order(res$case, res$n_train, res$method), ]
+}
+
+error_df <- array_to_df(error_files, metric = "error") %>% mutate(value = 100*value)
+cov_df <- array_to_df(cov_files, metric = "coverage")
+bandwidth_df <- array_to_df(bandwidth_files, metric = "bandwidth") %>% mutate(value = 100*value)
+
+
+error_summary <- summarize_metric(error_df)
+cov_summary <- summarize_metric(cov_df)
+bandwidth_summary <- summarize_metric(bandwidth_df)
+
+# --- write LaTeX tables to files ---
+error_tex <- knitr::kable(error_summary, format = "latex", booktabs = TRUE, caption = "Mean and SD of error across all knot_inference experiments")
+write.csv(error_summary, file = file.path(table_dir, "error_summary.csv"), row.names = FALSE)
+
+cov_tex <- knitr::kable(cov_summary, format = "latex", booktabs = TRUE, caption = "Mean and SD of coverage across all knot_inference experiments")
+write.csv(cov_summary, file = file.path(table_dir, "coverage_summary.csv"), row.names = FALSE)
+
+bandwidth_tex <- knitr::kable(bandwidth_summary, format = "latex", booktabs = TRUE, caption = "Mean and SD of bandwidth across all knot_inference experiments")
+write.csv(bandwidth_summary, file = file.path(table_dir, "bandwidth_summary.csv"), row.names = FALSE)
+
+# Print LaTeX to the document as-is (useful when rendering to PDF)
+# cat(error_tex, sep = "\n")
+# cat(cov_tex, sep = "\n")
+# cat(bandwidth_tex, sep = "\n")
+```
+
+```{r}
+knitr::kable(error_summary, caption = "Mean and SD of error across all knot_inference experiments")
+
+knitr::kable(cov_summary, caption = "Mean and SD of coverage across all knot_inference experiments")
+
+knitr::kable(bandwidth_summary, caption = "Mean and SD of bandwidth across all knot_inference experiments")
 ```
