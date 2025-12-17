@@ -23,7 +23,7 @@ library(splines)
 # read data
 triceps = read.csv('datasets/triceps/triceps.csv')
 # plot
-p_data = ggplot(triceps, aes(age, lntriceps)) + geom_point(shape = 1) + ylim(1.0, 4.0) + xlab('Age in years') + ylab('Triceps skinfold thickness in mm (log)')
+p_data = ggplot(triceps, aes(age, lntriceps)) + geom_point(shape = 1) + ylim(1.0, 4.0) + xlab('Age in years') + ylab('Triceps skinfold thickness in mm (log)') + theme_classic() + theme(axis.title = element_text(size = 14))
 pdf(file=file.path("figures/triceps","triceps_truth.pdf"),width=8,height=6)
 p_data
 dev.off()
@@ -41,9 +41,9 @@ counts = sapply(knot_samples, function(xi) {return(length(xi))}) # calculate the
 nodes = unlist(knot_samples) # calculate the posterior distribution
 
 # plot counts
-p_1 = ggplot(mapping=aes(x=counts)) + geom_bar(aes(y=after_stat(prop)), width = 0.6) + ylab("Proportion") + xlab("Number of Knots") + geom_vline(aes(xintercept=mean(counts)), color="red", linetype="dashed") + scale_x_continuous(breaks=1:6) + theme_classic()
+p_1 = ggplot(mapping=aes(x=counts)) + geom_bar(aes(y=after_stat(prop)), width = 0.6) + ylab("Proportion") + xlab("Number of Knots") + geom_vline(aes(xintercept=mean(counts)), color="red", linetype="dashed") + scale_x_continuous(breaks=1:6) + theme_classic() + theme(axis.title = element_text(size = 14))
 # plot nodes
-p_2 = ggplot(mapping=aes(x=nodes)) + geom_density(adjust=1) + ylab("Density") + xlab("Age in Years") + theme_classic()
+p_2 = ggplot(mapping=aes(x=nodes)) + geom_density(adjust=1) + ylab("Density") + xlab("Age in Years") + theme_classic() + theme(axis.title = element_text(size = 14))
 
 pdf(file=file.path("figures/triceps","knot_inference_triceps_1.pdf"),width=8,height=2)
 ggarrange(p_1,p_2,ncol=2,align="hv")
@@ -60,9 +60,9 @@ counts = sapply(knot_samples, function(xi) {return(length(xi))}) # calculate the
 nodes = unlist(knot_samples) # calculate the posterior distribution
 
 # plot counts
-p_1 = ggplot(mapping=aes(x=counts)) + geom_bar(aes(y=after_stat(prop)), width = 0.6) + ylab("Proportion") + xlab("Number of Knots") + geom_vline(aes(xintercept=mean(counts)), color="red", linetype="dashed") + scale_x_continuous(breaks=1:6) + theme_classic()
+p_1 = ggplot(mapping=aes(x=counts)) + geom_bar(aes(y=after_stat(prop)), width = 0.6) + ylab("Proportion") + xlab("Number of Knots") + geom_vline(aes(xintercept=mean(counts)), color="red", linetype="dashed") + scale_x_continuous(breaks=1:6) + theme_classic() + theme(axis.title = element_text(size = 14))
 # plot nodes
-p_2 = ggplot(mapping=aes(x=nodes)) + geom_density(adjust=1) + ylab("Density") + xlab("Age in Years") + theme_classic()
+p_2 = ggplot(mapping=aes(x=nodes)) + geom_density(adjust=1) + ylab("Density") + xlab("Age in Years") + theme_classic() + theme(axis.title = element_text(size = 14))
 
 pdf(file=file.path("figures/triceps","knot_inference_triceps_2.pdf"),width=8,height=2)
 ggarrange(p_1,p_2,ncol=2,align="hv")
@@ -103,7 +103,7 @@ summary(fitted_model)
 ```{r plot, include=FALSE}
 y_hat = fitted_model$fitted.values
 # plot
-p_fit = p_data + geom_line(aes(age, y_hat), color = 'red') + geom_vline(aes(xintercept=node[1]), linetype="solid") + geom_vline(aes(xintercept=node[2]), linetype="solid") +
+p_fit = p_data + geom_line(aes(age, y_hat), color = 'red', linewidth = 1.2) + geom_vline(aes(xintercept=node[1]), linetype="solid", linewidth = 1) + geom_vline(aes(xintercept=node[2]), linetype="solid", linewidth = 1) +
   geom_vline(aes(xintercept=node_quantiles[1,1]), linetype="dashed") + geom_vline(aes(xintercept=node_quantiles[1,2]), linetype="dashed") +
   geom_vline(aes(xintercept=node_quantiles[2,1]), linetype="dashed") + geom_vline(aes(xintercept=node_quantiles[2,2]), linetype="dashed")
 pdf(file=file.path("figures/triceps","triceps.pdf"),width=8,height=6)

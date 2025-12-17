@@ -63,15 +63,15 @@ x_train = runif(m,0,1)
 # case 1
 y_train_1 = f1(x_train)
 y_obs_1 = y_train_1 + rnorm(m,0,noises[1])
-p1 = ggplot() + geom_point(aes(x_train,y_obs_1),size=0.6,col="red") + geom_line(aes(x_train,y_train_1)) + theme_classic() + labs(title="One knot", x="x", y="y") + theme(plot.title=element_text(hjust=0.5))
+p1 = ggplot() + geom_point(aes(x_train,y_obs_1),size=0.6,col="red") + geom_line(aes(x_train,y_train_1)) + theme_classic() + labs(title="One knot", x="x", y="y") + theme(plot.title=element_text(hjust=0.5), title = element_text(size = 16))
 # case 2
 y_train_2 = f2(x_train)
 y_obs_2 = y_train_2 + rnorm(m,0,noises[2])
-p2 = ggplot() + geom_point(aes(x_train,y_obs_2),size=0.6,col="red") + geom_line(aes(x_train,y_train_2)) + theme_classic() + labs(title="Two knots", x="x", y="y") + theme(plot.title=element_text(hjust=0.5))
+p2 = ggplot() + geom_point(aes(x_train,y_obs_2),size=0.6,col="red") + geom_line(aes(x_train,y_train_2)) + theme_classic() + labs(title="Two knots", x="x", y="y") + theme(plot.title=element_text(hjust=0.5), title = element_text(size = 16))
 # case 3 
 y_train_3 = f3(x_train)
 y_obs_3 = y_train_3 + rnorm(m,0,noises[3])
-p3 = ggplot() + geom_point(aes(x_train,y_obs_3),size=0.6,col="red") + geom_line(aes(x_train,y_train_3)) + theme_classic() + labs(title="Four knots", x="x", y="y") + theme(plot.title=element_text(hjust=0.5))
+p3 = ggplot() + geom_point(aes(x_train,y_obs_3),size=0.6,col="red") + geom_line(aes(x_train,y_train_3)) + theme_classic() + labs(title="Four knots", x="x", y="y") + theme(plot.title=element_text(hjust=0.5), title = element_text(size = 16))
 # arrange in one page
 pdf(file=file.path("figures/knot_inference","knot_estimation.pdf"), height = 3, width=10)
 ggarrange(p1,p2,p3,ncol=3)
@@ -93,8 +93,8 @@ ebars_1$rjmcmc(burns=5000,steps=5000)
 knots_1 = ebars_1$knots()
 nums_1 = sapply(knots_1, function(xi) {return(length(xi))})
 points_1 = unlist(knots_1)
-p_11 = ggplot(mapping=aes(x=nums_1)) + geom_bar(aes(y=after_stat(prop)), width = 0.6) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_1)), color="red", linetype="dashed") + theme_classic()
-p_12 = ggplot(mapping=aes(x=points_1)) + geom_density(adjust=3) + labs(x="Knot Location", y="Density") + xlim(0, 1) + theme_classic()
+p_11 = ggplot(mapping=aes(x=nums_1)) + geom_bar(aes(y=after_stat(prop)), width = 0.6) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_1)), color="red", linetype="dashed") + theme_classic() + theme(axis.title = element_text(size = 14))
+p_12 = ggplot(mapping=aes(x=points_1)) + geom_density(adjust=3) + labs(x="Knot Location", y="Density") + xlim(0, 1) + theme_classic() + theme(axis.title = element_text(size = 14))
 
 # case 2
 m_2 = 500; sd_2 = noises[2]
@@ -106,8 +106,8 @@ ebars_2$rjmcmc(burns=5000,steps=5000)
 knots_2 = ebars_2$knots()
 nums_2 = sapply(knots_2, function(xi) {return(length(xi))})
 points_2 = unlist(knots_2)
-p_21 = ggplot(mapping=aes(x=nums_2)) + geom_bar(aes(y=after_stat(prop)), width = 0.6) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_2)), color="red", linetype="dashed") + theme_classic()
-p_22 = ggplot(mapping=aes(x=points_2)) + geom_density(adjust=1) + labs(x="Knot Location", y="Density") + xlim(0, 1) + theme_classic()
+p_21 = ggplot(mapping=aes(x=nums_2)) + geom_bar(aes(y=after_stat(prop)), width = 0.6) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_2)), color="red", linetype="dashed") + theme_classic() + theme(axis.title = element_text(size = 14))
+p_22 = ggplot(mapping=aes(x=points_2)) + geom_density(adjust=1) + labs(x="Knot Location", y="Density") + xlim(0, 1) + theme_classic() + theme(axis.title = element_text(size = 14))
 
 # case 3
 m_3 = 500; sd_3 = noises[3]
@@ -119,8 +119,8 @@ ebars_3$rjmcmc(burns=5000,steps=5000)
 knots_3 = ebars_3$knots()
 nums_3 = sapply(knots_3, function(xi) {return(length(xi))})
 points_3 = unlist(knots_3)
-p_31 = ggplot(mapping=aes(x=nums_3)) + geom_bar(aes(y=after_stat(prop)), width = 0.6) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_3)), color="red", linetype="dashed") + theme_classic()
-p_32 = ggplot(mapping=aes(x=points_3)) + geom_density(adjust=1) + labs(x="Knot Location", y="Density") + xlim(0, 1) + theme_classic()
+p_31 = ggplot(mapping=aes(x=nums_3)) + geom_bar(aes(y=after_stat(prop)), width = 0.6) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_3)), color="red", linetype="dashed") + theme_classic() + theme(axis.title = element_text(size = 14))
+p_32 = ggplot(mapping=aes(x=points_3)) + geom_density(adjust=1) + labs(x="Knot Location", y="Density") + xlim(0, 1) + theme_classic() + theme(axis.title = element_text(size = 14))
 
 pdf(file=file.path("figures/knot_inference","knot_distribution_1.pdf"),width=8,height=4)
 ggarrange(p_11,p_21,p_31,p_12,p_22,p_32,ncol=3,nrow=2,align="hv")
@@ -140,8 +140,8 @@ ebars_1$rjmcmc(burns=5000,steps=5000)
 knots_1 = ebars_1$knots()
 nums_1 = sapply(knots_1, function(xi) {return(length(xi))})
 points_1 = unlist(knots_1)
-p_11 = ggplot(mapping=aes(x=nums_1)) + geom_bar(aes(y=after_stat(prop)), width = 0.5) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_1)), color="red", linetype="dashed") + scale_x_continuous(breaks=1:6) + theme_classic()
-p_12 = ggplot(mapping=aes(x=points_1)) + geom_density(adjust=3) + labs(x="Knot Location", y="Density") + xlim(0, 1) + theme_classic()
+p_11 = ggplot(mapping=aes(x=nums_1)) + geom_bar(aes(y=after_stat(prop)), width = 0.5) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_1)), color="red", linetype="dashed") + scale_x_continuous(breaks=1:6) + theme_classic() + theme(axis.title = element_text(size = 14))
+p_12 = ggplot(mapping=aes(x=points_1)) + geom_density(adjust=3) + labs(x="Knot Location", y="Density") + xlim(0, 1) + theme_classic() + theme(axis.title = element_text(size = 14))
 
 # case 2
 m_2 = 500; sd_2 = noises[2]
@@ -153,8 +153,8 @@ ebars_2$rjmcmc(burns=5000,steps=5000)
 knots_2 = ebars_2$knots()
 nums_2 = sapply(knots_2, function(xi) {return(length(xi))})
 points_2 = unlist(knots_2)
-p_21 = ggplot(mapping=aes(x=nums_2)) + geom_bar(aes(y=after_stat(prop)), width = 0.5) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_2)), color="red", linetype="dashed") + scale_x_continuous(breaks=1:6) + theme_classic()
-p_22 = ggplot(mapping=aes(x=points_2)) + geom_density(adjust=1) + labs(x="Knot Location", y="Density") + xlim(0, 1) + theme_classic()
+p_21 = ggplot(mapping=aes(x=nums_2)) + geom_bar(aes(y=after_stat(prop)), width = 0.5) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_2)), color="red", linetype="dashed") + scale_x_continuous(breaks=1:6) + theme_classic() + theme(axis.title = element_text(size = 14))
+p_22 = ggplot(mapping=aes(x=points_2)) + geom_density(adjust=1) + labs(x="Knot Location", y="Density") + xlim(0, 1) + theme_classic() + theme(axis.title = element_text(size = 14))
 
 # case 3
 m_3 = 500; sd_3 = noises[3]
@@ -166,8 +166,8 @@ ebars_3$rjmcmc(burns=5000,steps=5000)
 knots_3 = ebars_3$knots()
 nums_3 = sapply(knots_3, function(xi) {return(length(xi))})
 points_3 = unlist(knots_3)
-p_31 = ggplot(mapping=aes(x=nums_3)) + geom_bar(aes(y=after_stat(prop)), width = 0.5) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_3)), color="red", linetype="dashed") + scale_x_continuous(breaks=1:6) + theme_classic()
-p_32 = ggplot(mapping=aes(x=points_3)) + geom_density(adjust=1) + labs(x="Knot Location", y="Density") + xlim(0, 1) + theme_classic()
+p_31 = ggplot(mapping=aes(x=nums_3)) + geom_bar(aes(y=after_stat(prop)), width = 0.5) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_3)), color="red", linetype="dashed") + scale_x_continuous(breaks=1:6) + theme_classic() + theme(axis.title = element_text(size = 14))
+p_32 = ggplot(mapping=aes(x=points_3)) + geom_density(adjust=1) + labs(x="Knot Location", y="Density") + xlim(0, 1) + theme_classic() + theme(axis.title = element_text(size = 14))
 
 pdf(file=file.path("figures/knot_inference","knot_distribution_2.pdf"),width=8,height=4)
 ggarrange(p_11,p_21,p_31,p_12,p_22,p_32,ncol=3,nrow=2,align="hv")
