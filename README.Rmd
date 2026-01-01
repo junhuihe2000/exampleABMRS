@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-The exampleABMRS consists of all R codes for numerical experiments in the article ***Adaptive Bayesian Multivariate Spline Knot Inference with Prior Specifications on Model Complexity***. The source package can be found in [ABMRS](https://github.com/junhuihe2000/ABMRS). We implement the applications of the proposed method in knot inference, manifold denoising and function fitting.
+The exampleABMRS consists of all R codes for numerical experiments in the article ***Adaptive Bayesian Multivariate Spline Knot Inference with Prior Specifications on Model Complexity***. The source package can be found in [ABMRS](https://github.com/junhuihe2000/ABMRS). We implement the applications of the proposed method in knot inference and function fitting.
 
 ## Overview
 
