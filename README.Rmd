@@ -20,6 +20,8 @@ The exampleABMRS consists of all R codes for numerical experiments in the articl
 
 ## Overview
 
-1. `knot_inference` includes simulations and figures of knot inference in linear spline models with one, two and four knots.
-2. `manifold` includes datasets, simulations, output and figures of manifold denoising in three scenarios of arcs, spiral curve and Swiss roll. 
-3. `fitting` includes the prediction performance in curve and surface fitting with jumping discontinuity.
+1. `fitting` includes the prediction performance in curve and surface fitting with jumping discontinuity.
+2. `knot_inference` includes simulations and figures of knot inference in linear spline models with one, two and four knots.
+3. `real_data` includes the analysis of real datasets in univariate curve fitting: triceps skinfold thickness data.
+4. `tables` includes the summary tables of all numerical experiments.
+5. `figures` includes all figures in the article.

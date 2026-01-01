@@ -393,3 +393,69 @@ knitr::kable(cov_summary, caption = "Mean and SD of coverage across all knot_inf
 
 knitr::kable(bandwidth_summary, caption = "Mean and SD of bandwidth across all knot_inference experiments")
 ```
+
+# Summary of Surface Peak Detection Results
+
+```{r}
+# Concatenate surface_peak outputs and compute mean/sd by scenario and method
+
+# Paths to saved arrays from the Slurm runs
+out_dir <- "output/surface_peak"
+table_dir <- "tables/surface_peak"
+if(!dir.exists(table_dir)) {
+    dir.create(table_dir, recursive = TRUE)
+}
+distance_files <- list.files(out_dir, pattern = "^surface_peak_job-\\d+\\.rds$", full.names = TRUE)
+
+stopifnot(length(distance_files) > 0)
+
+array_to_df <- function(files, metric) {
+	dfs <- lapply(files, function(f) {
+		arr <- readRDS(f)
+		dn <- dimnames(arr)
+		grid <- expand.grid(
+			row = dn[[1]],
+			method = dn[[2]],
+			rep = seq_len(dim(arr)[3]),
+			stringsAsFactors = FALSE
+		)
+		grid$value <- as.vector(arr)
+		grid$file <- basename(f)
+		grid$metric <- metric
+		grid
+	})
+	do.call(rbind, dfs)
+}
+
+summarize_metric <- function(df) {
+	agg <- aggregate(value ~ row + method, data = df, FUN = function(x) c(mean = mean(x, na.rm = TRUE), sd = sd(x, na.rm = TRUE)))
+	res <- cbind(agg[c("row", "method")], agg$value)
+
+	# Parse row label: "Case 1-200" -> case and training size
+	parts <- strsplit(res$row, "-", fixed = TRUE)
+	res$case <- vapply(parts, `[`, "", 1)
+	res$n_train <- as.integer(vapply(parts, `[`, "", 2))
+
+	# Ensure numeric and round to 3 decimal places
+	res$mean <- round(as.numeric(res[["mean"]]), 3)
+	res$sd   <- round(as.numeric(res[["sd"]]), 3)
+
+	res <- res[, c("case", "n_train", "method", "mean", "sd")]
+	res[order(res$case, res$n_train, res$method), ]
+}
+
+distance_df <- array_to_df(distance_files, metric = "distance")
+
+distance_summary <- summarize_metric(distance_df)
+
+# --- write LaTeX tables to files ---
+distance_tex <- knitr::kable(distance_summary, format = "latex", booktabs = TRUE, caption = "Mean and SD of distance across all surface_peak experiments")
+write.csv(distance_summary, file = file.path(table_dir, "distance_summary.csv"), row.names = FALSE)
+
+# Print LaTeX to the document as-is (useful when rendering to PDF)
+# cat(distance_tex, sep = "\n")
+```
+
+```{r}
+knitr::kable(distance_summary, caption = "Mean and SD of distance across all surface_peak experiments")
+```

@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Junhui He">
-<meta name="dcterms.date" content="2025-12-16">
+<meta name="dcterms.date" content="2025-12-31">
 
 <title>Summary Output</title>
 <style>
@@ -101,7 +101,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">December 16, 2025</p>
+      <p class="date">December 31, 2025</p>
     </div>
   </div>
   
@@ -5883,6 +5883,136 @@ Attaching package: 'dplyr'</code></pre>
 <td style="text-align: left;">95%</td>
 <td style="text-align: right;">5.617</td>
 <td style="text-align: right;">1.344</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="summary-of-surface-peak-detection-results" class="level1">
+<h1>Summary of Surface Peak Detection Results</h1>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Concatenate surface_peak outputs and compute mean/sd by scenario and method</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Paths to saved arrays from the Slurm runs</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>out_dir <span class="ot">&lt;-</span> <span class="st">"output/surface_peak"</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>table_dir <span class="ot">&lt;-</span> <span class="st">"tables/surface_peak"</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">dir.exists</span>(table_dir)) {</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">dir.create</span>(table_dir, <span class="at">recursive =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>distance_files <span class="ot">&lt;-</span> <span class="fu">list.files</span>(out_dir, <span class="at">pattern =</span> <span class="st">"^surface_peak_job-</span><span class="sc">\\</span><span class="st">d+</span><span class="sc">\\</span><span class="st">.rds$"</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">length</span>(distance_files) <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>array_to_df <span class="ot">&lt;-</span> <span class="cf">function</span>(files, metric) {</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>    dfs <span class="ot">&lt;-</span> <span class="fu">lapply</span>(files, <span class="cf">function</span>(f) {</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>        arr <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(f)</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>        dn <span class="ot">&lt;-</span> <span class="fu">dimnames</span>(arr)</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>        grid <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>            <span class="at">row =</span> dn[[<span class="dv">1</span>]],</span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>            <span class="at">method =</span> dn[[<span class="dv">2</span>]],</span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>            <span class="at">rep =</span> <span class="fu">seq_len</span>(<span class="fu">dim</span>(arr)[<span class="dv">3</span>]),</span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>            <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span></span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a>        grid<span class="sc">$</span>value <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(arr)</span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>        grid<span class="sc">$</span>file <span class="ot">&lt;-</span> <span class="fu">basename</span>(f)</span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a>        grid<span class="sc">$</span>metric <span class="ot">&lt;-</span> metric</span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a>        grid</span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">do.call</span>(rbind, dfs)</span>
+<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a>summarize_metric <span class="ot">&lt;-</span> <span class="cf">function</span>(df) {</span>
+<span id="cb23-32"><a href="#cb23-32" aria-hidden="true" tabindex="-1"></a>    agg <span class="ot">&lt;-</span> <span class="fu">aggregate</span>(value <span class="sc">~</span> row <span class="sc">+</span> method, <span class="at">data =</span> df, <span class="at">FUN =</span> <span class="cf">function</span>(x) <span class="fu">c</span>(<span class="at">mean =</span> <span class="fu">mean</span>(x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="at">sd =</span> <span class="fu">sd</span>(x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)))</span>
+<span id="cb23-33"><a href="#cb23-33" aria-hidden="true" tabindex="-1"></a>    res <span class="ot">&lt;-</span> <span class="fu">cbind</span>(agg[<span class="fu">c</span>(<span class="st">"row"</span>, <span class="st">"method"</span>)], agg<span class="sc">$</span>value)</span>
+<span id="cb23-34"><a href="#cb23-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-35"><a href="#cb23-35" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Parse row label: "Case 1-200" -&gt; case and training size</span></span>
+<span id="cb23-36"><a href="#cb23-36" aria-hidden="true" tabindex="-1"></a>    parts <span class="ot">&lt;-</span> <span class="fu">strsplit</span>(res<span class="sc">$</span>row, <span class="st">"-"</span>, <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb23-37"><a href="#cb23-37" aria-hidden="true" tabindex="-1"></a>    res<span class="sc">$</span>case <span class="ot">&lt;-</span> <span class="fu">vapply</span>(parts, <span class="st">`</span><span class="at">[</span><span class="st">`</span>, <span class="st">""</span>, <span class="dv">1</span>)</span>
+<span id="cb23-38"><a href="#cb23-38" aria-hidden="true" tabindex="-1"></a>    res<span class="sc">$</span>n_train <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(<span class="fu">vapply</span>(parts, <span class="st">`</span><span class="at">[</span><span class="st">`</span>, <span class="st">""</span>, <span class="dv">2</span>))</span>
+<span id="cb23-39"><a href="#cb23-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-40"><a href="#cb23-40" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Ensure numeric and round to 3 decimal places</span></span>
+<span id="cb23-41"><a href="#cb23-41" aria-hidden="true" tabindex="-1"></a>    res<span class="sc">$</span>mean <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">as.numeric</span>(res[[<span class="st">"mean"</span>]]), <span class="dv">3</span>)</span>
+<span id="cb23-42"><a href="#cb23-42" aria-hidden="true" tabindex="-1"></a>    res<span class="sc">$</span>sd   <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">as.numeric</span>(res[[<span class="st">"sd"</span>]]), <span class="dv">3</span>)</span>
+<span id="cb23-43"><a href="#cb23-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-44"><a href="#cb23-44" aria-hidden="true" tabindex="-1"></a>    res <span class="ot">&lt;-</span> res[, <span class="fu">c</span>(<span class="st">"case"</span>, <span class="st">"n_train"</span>, <span class="st">"method"</span>, <span class="st">"mean"</span>, <span class="st">"sd"</span>)]</span>
+<span id="cb23-45"><a href="#cb23-45" aria-hidden="true" tabindex="-1"></a>    res[<span class="fu">order</span>(res<span class="sc">$</span>case, res<span class="sc">$</span>n_train, res<span class="sc">$</span>method), ]</span>
+<span id="cb23-46"><a href="#cb23-46" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb23-47"><a href="#cb23-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-48"><a href="#cb23-48" aria-hidden="true" tabindex="-1"></a>distance_df <span class="ot">&lt;-</span> <span class="fu">array_to_df</span>(distance_files, <span class="at">metric =</span> <span class="st">"distance"</span>)</span>
+<span id="cb23-49"><a href="#cb23-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-50"><a href="#cb23-50" aria-hidden="true" tabindex="-1"></a>distance_summary <span class="ot">&lt;-</span> <span class="fu">summarize_metric</span>(distance_df)</span>
+<span id="cb23-51"><a href="#cb23-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-52"><a href="#cb23-52" aria-hidden="true" tabindex="-1"></a><span class="co"># --- write LaTeX tables to files ---</span></span>
+<span id="cb23-53"><a href="#cb23-53" aria-hidden="true" tabindex="-1"></a>distance_tex <span class="ot">&lt;-</span> knitr<span class="sc">::</span><span class="fu">kable</span>(distance_summary, <span class="at">format =</span> <span class="st">"latex"</span>, <span class="at">booktabs =</span> <span class="cn">TRUE</span>, <span class="at">caption =</span> <span class="st">"Mean and SD of distance across all surface_peak experiments"</span>)</span>
+<span id="cb23-54"><a href="#cb23-54" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(distance_summary, <span class="at">file =</span> <span class="fu">file.path</span>(table_dir, <span class="st">"distance_summary.csv"</span>), <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb23-55"><a href="#cb23-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-56"><a href="#cb23-56" aria-hidden="true" tabindex="-1"></a><span class="co"># Print LaTeX to the document as-is (useful when rendering to PDF)</span></span>
+<span id="cb23-57"><a href="#cb23-57" aria-hidden="true" tabindex="-1"></a><span class="co"># cat(distance_tex, sep = "\n")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(distance_summary, <span class="at">caption =</span> <span class="st">"Mean and SD of distance across all surface_peak experiments"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Mean and SD of distance across all surface_peak experiments</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;"></th>
+<th style="text-align: left;">case</th>
+<th style="text-align: right;">n_train</th>
+<th style="text-align: left;">method</th>
+<th style="text-align: right;">mean</th>
+<th style="text-align: right;">sd</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">1</td>
+<td style="text-align: left;">150</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: left;">negative</td>
+<td style="text-align: right;">0.088</td>
+<td style="text-align: right;">0.089</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4</td>
+<td style="text-align: left;">150</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: left;">positive</td>
+<td style="text-align: right;">0.088</td>
+<td style="text-align: right;">0.108</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">2</td>
+<td style="text-align: left;">260</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: left;">negative</td>
+<td style="text-align: right;">0.075</td>
+<td style="text-align: right;">0.109</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">260</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: left;">positive</td>
+<td style="text-align: right;">0.056</td>
+<td style="text-align: right;">0.036</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">3</td>
+<td style="text-align: left;">500</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: left;">negative</td>
+<td style="text-align: right;">0.057</td>
+<td style="text-align: right;">0.020</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">6</td>
+<td style="text-align: left;">500</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: left;">positive</td>
+<td style="text-align: right;">0.056</td>
+<td style="text-align: right;">0.018</td>
 </tr>
 </tbody>
 </table>

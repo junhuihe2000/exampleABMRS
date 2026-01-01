@@ -35,26 +35,78 @@ f1_scalar <- function(x) {
 p_1 = optim(c(0.3, 0.3), f1_scalar)$par
 p_2 = optim(c(0.7, 0.7), f1_scalar, control = list(fnscale = -1))$par
 
-p_1
-p_2
+p_1 # （0.2864, 0.2864）
+p_2 # (0.7136, 0.7136)
 ```
 
+# Posterior Distributions of the Number of Knots
 
 ```{r}
 set.seed(1234)
 
 # generate training samples
-m = 1000
+ms = c(150, 260, 500)
+for (m in ms) {
+  x = cbind(runif(m), runif(m))
+  y = f1(x)
+  y_obs = y + rnorm(m, 0, 1)
+  xmin = c(0,0); xmax = c(1,1)
+
+  # run surface ABMRS
+  my_mebars = mebars(x, y_obs, xmin = xmin, xmax = xmax, gamma = 1, times = c(2,2), degrees = c(1,1))
+  my_mebars$rjmcmc(burns = 20000, steps = 20000)
+
+  knots = my_mebars$knots()
+  nums_1 = sapply(knots, function(k) {length(k[[1]])})
+  nums_2 = sapply(knots, function(k) {length(k[[2]])})
+
+  num_min_1 = min(nums_1); num_max_1 = max(nums_1)
+  num_min_2 = min(nums_2); num_max_2 = max(nums_2)
+  p1 = ggplot(mapping=aes(x=nums_1)) + geom_bar(aes(y=after_stat(prop)), width = 0.6) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_1)), color="red", linetype="dashed") + theme_classic() + theme(axis.title = element_text(size = 14)) + scale_x_continuous(breaks = seq(num_min_1-1, num_max_1+1), limits = c(num_min_1-1.2, num_max_1+1.2))
+  p2 = ggplot(mapping=aes(x=nums_2)) + geom_bar(aes(y=after_stat(prop)), width = 0.6) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_2)), color="red", linetype="dashed") + theme_classic() + theme(axis.title = element_text(size = 14)) + scale_x_continuous(breaks = seq(num_min_2-1, num_max_2+1), limits = c(num_min_2-1.2, num_max_2+1.2))
+  
+  pdf(file=file.path("figures/peak_dectection",paste0("surface_peak_m_",m,".pdf")), width=8, height=4)
+  print(ggarrange(p1, p2, ncol=2, nrow=1, align="hv"))
+  dev.off()
+}
+```
+
+```{r}
+set.seed(1234)
+kms = list(c(3,3), c(3,3), c(4,5))
+
+ks = c(4,5)
+m = 500
 x = cbind(runif(m), runif(m))
 y = f1(x)
 y_obs = y + rnorm(m, 0, 1)
 xmin = c(0,0); xmax = c(1,1)
-```
 
-```{r}
 # run surface ABMRS
-my_mebars = mebars(x, y_obs, xmin = xmin, xmax = xmax, ks = c(5,5), times = c(2,2), degrees = c(1,1))
+my_mebars = mebars(x, y_obs, xmin = xmin, xmax = xmax, ks = ks, times = c(2,2), degrees = c(1,1))
 my_mebars$rjmcmc(burns = 20000, steps = 20000)
+
+knots = my_mebars$knots()
+xis_1 = sapply(knots, function(k) {k[[1]]})
+xis_2 = sapply(knots, function(k) {k[[2]]})
+xi_1 = rowMeans(xis_1)
+xi_2 = rowMeans(xis_2)
+
+xis = as.matrix(expand.grid(xi_1, xi_2))
+is_peak = array(NA, c(nrow(xis), 2))
+for (j in 1:nrow(xis)) {
+  xi = xis[j, ]
+  x_neigh = as.matrix(expand.grid(seq(xi[1]-0.02, xi[1]+0.02, 0.01), 
+                        seq(xi[2]-0.02, xi[2]+0.02, 0.01)))
+  pred = my_mebars$predict(rbind(xi, x_neigh))
+  y_hat = rowMeans(pred)
+  
+  is_peak[j, 1] = y_hat[1] == min(y_hat)
+  is_peak[j, 2] = y_hat[1] == max(y_hat)
+}
+
+peak_df = data.frame(xis, is_peak)
+colnames(peak_df) = c("x_1", "x_2", "min", "max")
 ```
 
 ```{r}
@@ -81,9 +133,11 @@ peak_df = data.frame(xis, is_peak)
 colnames(peak_df) = c("x_1", "x_2", "min", "max")
 ```
 
+# Peak Detection
+
 ```{r}
 # run surface ABMRS
-my_mebars = mebars(x, y_obs, xmin = xmin, xmax = xmax, gamma = 1, times = c(2,2), degrees = c(1,1))
+my_mebars = mebars(x, y_obs, xmin = xmin, xmax = xmax, ks = c(5,5), times = c(2,2), degrees = c(1,1))
 my_mebars$rjmcmc(burns = 20000, steps = 20000)
 ```
 
@@ -93,6 +147,7 @@ l = length(knots)
 
 peak_samples = list()
 
+time_start = Sys.time()
 for (i in 1:l) {
   xi_1 = knots[[i]][[1]]; xi_2 = knots[[i]][[2]]
   # fit linear spline regression
@@ -120,11 +175,13 @@ for (i in 1:l) {
   
   peak_samples[[i]] = peak_df
 }
+time_end = Sys.time()
+print(time_end - time_start)
 ```
 
 ```{r}
 # peak points
-p_1 = c(0.286, 0.286); p_2 = c(0.714, 0.714)
+p_1 = c(0.2864, 0.2864); p_2 = c(0.7136, 0.7136)
 
 neg_peak_points = list(); pos_peak_points = list()
 peak_count = array(NA, c(l, 2))
@@ -162,6 +219,8 @@ d_1 = sqrt(sum((phat_1 - p_1)^2))
 d_2 = sqrt(sum((phat_2 - p_2)^2))
 cat("Negative peak distance:", d_1, "\n")
 cat("Positive peak distance:", d_2, "\n")
+phat_1
+phat_2
 ```
 
 
@@ -172,10 +231,10 @@ cat("Positive peak distance:", d_2, "\n")
 set.seed(1234)
 
 # peak points
-p_1 = c(0.286, 0.286); p_2 = c(0.714, 0.714)
+p_1 = c(0.2864, 0.2864); p_2 = c(0.7136, 0.7136)
 
 # experimental hyper-parameters
-m = 1000; num_exps = 20
+m = 500; num_exps = 50
 peaks = list()
 
 t_start = Sys.time()

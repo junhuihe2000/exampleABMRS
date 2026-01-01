@@ -1,0 +1,7 @@
+"case","n_train","method","mean","sd"
+"150",NA,"negative",0.088,0.089
+"150",NA,"positive",0.088,0.108
+"260",NA,"negative",0.075,0.109
+"260",NA,"positive",0.056,0.036
+"500",NA,"negative",0.057,0.02
+"500",NA,"positive",0.056,0.018

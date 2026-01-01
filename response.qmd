@@ -1,0 +1,108 @@
+---
+title: "Response to Reviewers"
+author: "Junhui He"
+date: "`r Sys.Date()`"
+format: html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r package}
+library(ggplot2)
+library(ABMRS)
+library(ggpubr)
+```
+
+# Example function
+
+```{r example-function}
+f <- function(x) {
+  y <- (-x) * (x <= 0.5) + (-x + 1) * (x > 0.5)
+  y
+}
+```
+
+# Generate data
+
+```{r generate-data}
+set.seed(123)
+# Generate training data
+m_train <- 200
+x_train <- runif(m_train, 0, 1)
+y_train <- f(x_train) + rnorm(m_train, 0, 0.1)
+# Generate test data
+m_test <- 200
+x_test <- seq(0, 1, length.out = m_test)
+y_test <- f(x_test)
+
+# plot training data
+p <- ggplot() + geom_point(aes(x = x_train, y = y_train), color = "black", size = 0.5) +
+  geom_line(aes(x = x_test, y = y_test), color = "red") +
+  labs(x = "x", y = "y")
+```
+
+# Run ABMRS
+
+```{r run-abmrs}
+ebars <- ebars(x_train, y_train, xmin = 0, xmax = 1, gamma = 1, times = 2, degree = 1)
+ebars$rjmcmc(burns = 5000, steps = 5000)
+pred <- ebars$predict(x_test)
+y_pred <- rowMeans(pred)
+rmse <- sqrt(mean((y_pred - y_test)^2))
+cat("RMSE:", rmse, "\n")
+
+# plot training data, true curve and fitted curve
+p_fit <- ggplot() + 
+  geom_point(aes(x = x_train, y = y_train, color = "Training Data", linetype = "Training Data"), size = 0.5) +
+  geom_line(aes(x = x_test, y = y_test, color = "True Curve", linetype = "True Curve"), linewidth = 1) +
+  geom_line(aes(x = x_test, y = y_pred, color = "Fitted Curve", linetype = "Fitted Curve"), linewidth = 1) +
+  scale_color_manual(
+    values = c("Training Data" = "black", "True Curve" = "red", "Fitted Curve" = "blue"),
+    breaks = c("Training Data", "True Curve", "Fitted Curve")
+  ) +
+  scale_linetype_manual(
+    values = c("Training Data" = "blank", "True Curve" = "solid", "Fitted Curve" = "dashed"),
+    breaks = c("Training Data", "True Curve", "Fitted Curve")
+  ) +
+  labs(x = "x", y = "y", color = "Legend", linetype = "Legend") +
+  guides(
+    color = guide_legend(override.aes = list(linewidth = 1), keywidth = 2.5),
+    linetype = guide_legend(override.aes = list(linewidth = 1), keywidth = 2.5)
+  ) +
+  annotate("text", x = 0.1, y = 0.4, label = paste("RMSE =", round(rmse, 4)), size = 4, hjust = 0) +
+  theme_classic() +
+  theme(legend.position = "top")
+
+pdf("figures/response/abmrs_fit.pdf", width = 6, height = 4)
+p_fit
+dev.off()
+```
+
+# Posterior distributions
+
+```{r posterior-distributions}
+knots <- ebars$knots()
+nums <- sapply(knots, length)
+points <- unlist(knots)
+
+p_1 = ggplot(mapping=aes(x=nums)) + geom_bar(aes(y=after_stat(prop)), width = 0.6) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums)), color="red", linetype="dashed") + theme_classic() + theme(axis.title = element_text(size = 14))
+p_2 = ggplot(mapping=aes(x=points)) + geom_density(adjust=5) + labs(x="Knot Location", y="Density") + xlim(0, 1) + theme_classic() + theme(axis.title = element_text(size = 14))
+
+pdf("figures/response/abmrs_posterior.pdf", width = 10, height = 4)
+ggarrange(p_1, p_2, ncol=2, nrow=1, align="hv")
+dev.off()
+```
+
+# Credible Intervals
+
+```{r credible-intervals}
+ebars_fixed <- ebars(x_train, y_train, xmin = 0, xmax = 1, k = 2, times = 2, degree = 1)
+ebars_fixed$rjmcmc(burns = 5000, steps = 5000)
+# Get knots matrix
+knots_mat <- do.call(rbind, ebars_fixed$knots())
+knots_mean <- colMeans(knots_mat)
+cat("Mean Knot Locations:\n")
+print(knots_mean)
+```

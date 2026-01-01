@@ -52,7 +52,7 @@ Plot True Surface
 ```{r}
 pdf(file=file.path("/Users/hjh/PhD/ABMRS/exampleABMRS/figures/surface_fitting","surface_truth.pdf"), width=12, height=4)
 par(mfrow=c(1,3))
-par(mar=c(0,1,0,1))
+par(mar=c(2,2,2,2))
 grid = seq(0,1,by=0.01)
 x = cbind(rep(grid,each=length(grid)),rep(grid,times=length(grid)))
 for(i in c(1:3)) {
@@ -61,7 +61,7 @@ for(i in c(1:3)) {
           theta = 20, phi = 20,
           pch = 20, box=TRUE, cex = 0.4, colkey = FALSE, 
           border="black", shade=0.8, 
-          bty = "g", axes = FALSE,
+          bty = "b2", axes = TRUE, ticktype = "detailed",
           main="")
 }
 dev.off()
