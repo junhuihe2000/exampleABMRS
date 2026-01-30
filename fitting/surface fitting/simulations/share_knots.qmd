@@ -1,0 +1,123 @@
+---
+title: "Share number of knots across dimensions"
+author: "He Junhui"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+library(ABMRS)
+library(ggplot2)
+library(ggpubr)
+```
+
+# Function to generate data
+
+```{r}
+# Define the true function
+# f(x) = sin(2πx1) + cos(8πx2)
+f <- function(x) {
+  sin(2 * pi * x[, 1]) + cos(8 * pi * x[, 2])
+}
+
+noise_sd <- 0.1
+
+# Generate data
+set.seed(1234)
+# Training data
+m_train <- 500
+X_train <- matrix(runif(m_train * 2), ncol = 2)
+y_train <- f(X_train)
+y_obs <- y_train + rnorm(m_train, sd = noise_sd)
+# Testing data
+m_test <- 500
+X_test <- matrix(runif(m_test * 2), ncol = 2)
+y_test <- f(X_test)
+# Define the domain
+xmin <- c(0, 0)
+xmax <- c(1, 1)
+```
+
+# Run simulations
+
+```{r}
+mymebars <- mebars(
+  x = X_train,
+  y = y_obs,
+  xmin = xmin,
+  xmax = xmax,
+  gamma = 1, # Share number of knots across dimensions
+  times = c(2, 2)
+)
+mymebars$rjmcmc(burns = 10000, steps = 10000)
+```
+
+```{r}
+knots <- mymebars$knots()
+nums_1 <- sapply(knots, function(k) length(k[[1]]))
+nums_2 <- sapply(knots, function(k) length(k[[2]]))
+pred <- mymebars$predict(X_test)
+y_pred <- rowMeans(pred)
+mse <- mean((y_pred - y_test)^2)
+print(paste("Mean Squared Error on Test Set:", round(mse, 4)))
+mse_naive <- mean((mean(y_obs) - y_test)^2)
+print(paste("Mean Squared Error of Naive Predictor:", round(mse_naive, 4)))
+```
+
+# Visualizations
+
+```{r}
+ggplot() + geom_point(aes(X_test[,1], y_pred), color='blue') +
+  geom_point(aes(X_test[,1], y_test), color='red', alpha=0.5) +
+  labs(title='Predicted vs True Values', x='X1', y='Values') +
+  theme_minimal()
+```
+
+```{r}
+p1 <- ggplot(mapping=aes(x=nums_1)) + geom_bar(aes(y=after_stat(prop)), width = 0.5) + scale_x_continuous(breaks=0:4) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_1)), color="red", linetype="dashed") + theme_classic() + theme(axis.title = element_text(size = 14))
+p2 <- ggplot(mapping=aes(x=nums_2)) + geom_bar(aes(y=after_stat(prop)), width = 0.5) + scale_x_continuous(breaks=5:8) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_2)), color="red", linetype="dashed") + theme_classic() + theme(axis.title = element_text(size = 14))
+pdf(file = file.path("figures", "knot_distribution.pdf"), width = 10, height = 5)
+ggarrange(p1, p2, ncol=2)
+dev.off()
+```
+
+# Vary number of knots across dimensions
+
+```{r}
+set.seed(1234)
+ms <- c(200, 500, 1000)
+ks <- list(c(2,7), c(2,2), c(5,5), c(7,7))
+mse_array <- array(NA, dim = c(length(ms), length(ks)), dimnames = list(paste0("m=", ms), paste0("k=", sapply(ks, function(k) paste(k, collapse=",")))))
+
+time_start <- Sys.time()
+for (i in seq_along(ms)) {
+  m_train <- ms[i]
+  X_train <- matrix(runif(m_train * 2), ncol = 2)
+  y_train <- f(X_train)
+  y_obs <- y_train + rnorm(m_train, sd = noise_sd)
+  
+  for (j in seq_along(ks)) {
+    k <- ks[[j]]
+    mymebars <- mebars(
+      x = X_train,
+      y = y_obs,
+      xmin = xmin,
+      xmax = xmax,
+      times = c(2, 2),
+      ks = k # Vary number of knots across dimensions
+    )
+    mymebars$rjmcmc(burns = 10000, steps = 10000)
+    
+    pred <- mymebars$predict(X_test)
+    y_pred <- rowMeans(pred)
+    mse_array[i, j] <- mean((y_pred - y_test)^2)
+  }
+}
+time_end <- Sys.time()
+print(paste("Total simulation time:", round(difftime(time_end, time_start, units="mins"), 2), "minutes"))
+mse_array
+```
