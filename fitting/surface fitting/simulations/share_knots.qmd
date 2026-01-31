@@ -78,8 +78,13 @@ ggplot() + geom_point(aes(X_test[,1], y_pred), color='blue') +
 ```
 
 ```{r}
-p1 <- ggplot(mapping=aes(x=nums_1)) + geom_bar(aes(y=after_stat(prop)), width = 0.5) + scale_x_continuous(breaks=0:4) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_1)), color="red", linetype="dashed") + theme_classic() + theme(axis.title = element_text(size = 14))
-p2 <- ggplot(mapping=aes(x=nums_2)) + geom_bar(aes(y=after_stat(prop)), width = 0.5) + scale_x_continuous(breaks=5:8) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_2)), color="red", linetype="dashed") + theme_classic() + theme(axis.title = element_text(size = 14))
+breaks1 <- floor(min(nums_1)):ceiling(max(nums_1))
+if(length(breaks1) < 2) breaks1 <- floor(min(nums_1)):(floor(min(nums_1)) + 1)
+breaks2 <- floor(min(nums_2)):ceiling(max(nums_2))
+if(length(breaks2) < 2) breaks2 <- floor(min(nums_2)):(floor(min(nums_2)) + 1)
+
+p1 <- ggplot(mapping=aes(x=nums_1)) + geom_bar(aes(y=after_stat(prop)), width = 0.5) + scale_x_continuous(breaks=breaks1) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_1)), color="red", linetype="dashed") + theme_classic() + theme(axis.title = element_text(size = 14))
+p2 <- ggplot(mapping=aes(x=nums_2)) + geom_bar(aes(y=after_stat(prop)), width = 0.5) + scale_x_continuous(breaks=breaks2) + labs(x="Number of Knots", y="Proportion") + geom_vline(aes(xintercept=mean(nums_2)), color="red", linetype="dashed") + theme_classic() + theme(axis.title = element_text(size = 14))
 pdf(file = file.path("figures", "knot_distribution.pdf"), width = 10, height = 5)
 ggarrange(p1, p2, ncol=2)
 dev.off()

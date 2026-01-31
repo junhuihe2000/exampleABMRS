@@ -84,6 +84,71 @@ knitr::kable(mse_summary, caption = "Mean and SD of MSE across all curve_fitting
 knitr::kable(censor_summary, caption = "Mean and SD of censored MSE (trimmed) across all curve_fitting experiments")
 ```
 
+# Summary of Share Knots Results
+
+```{r}
+# Concatenate share_knots outputs and compute mean/sd by scenario and method
+
+# Paths to saved arrays from the Slurm runs
+out_dir <- "output/share_knots"
+table_dir <- "tables/share_knots"
+if(!dir.exists(table_dir)) {
+    dir.create(table_dir, recursive = TRUE)
+}
+mse_files <- list.files(out_dir, pattern = "^share_knots_raw_job-\\d+\\.rds$", full.names = TRUE)
+
+stopifnot(length(mse_files) > 0)
+
+array_to_df <- function(files, metric) {
+	dfs <- lapply(files, function(f) {
+		arr <- readRDS(f)
+		dn <- dimnames(arr)
+		grid <- expand.grid(
+			row = dn[[1]],
+			method = dn[[2]],
+			rep = seq_len(dim(arr)[3]),
+			stringsAsFactors = FALSE
+		)
+		grid$value <- as.vector(arr)
+		grid$file <- basename(f)
+		grid$metric <- metric
+		grid
+	})
+	do.call(rbind, dfs)
+}
+
+summarize_metric <- function(df) {
+	agg <- aggregate(value ~ row + method, data = df, FUN = function(x) c(mean = mean(x, na.rm = TRUE), sd = sd(x, na.rm = TRUE)))
+	res <- cbind(agg[c("row", "method")], agg$value)
+
+	# Parse row label: "Case 1-200" -> case and training size
+	parts <- strsplit(res$row, "-", fixed = TRUE)
+	res$case <- vapply(parts, `[`, "", 1)
+
+	# Ensure numeric and round to 3 decimal places	
+	res$mean <- round(as.numeric(res[["mean"]]), 3)
+	res$sd   <- round(as.numeric(res[["sd"]]), 3)
+
+	res <- res[, c("case", "method", "mean", "sd")]
+	res[order(res$case, res$method), ]
+}
+
+mse_df <- array_to_df(mse_files, metric = "mse") %>% mutate(value = sqrt(value))
+
+mse_summary <- summarize_metric(mse_df)
+
+# --- write LaTeX tables to files ---
+mse_tex <- knitr::kable(mse_summary, format = "latex", booktabs = TRUE, caption = "Mean and SD of MSE across all share_knots experiments")
+write.csv(mse_summary, file = file.path(table_dir, "mse_summary.csv"), row.names = FALSE)
+
+# Print LaTeX to the document as-is (useful when rendering to PDF)
+# cat(mse_tex, sep = "\n")
+```
+
+```{r}
+knitr::kable(mse_summary, caption = "Mean and SD of MSE across all share_knots experiments")
+```
+
 # Summary of Surface Fitting Results
 
 ```{r}

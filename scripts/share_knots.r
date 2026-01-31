@@ -4,8 +4,6 @@
 
 suppressPackageStartupMessages({
   library(ABMRS)
-  library(ggplot2)
-  library(ggpubr)
 })
 
 # ---------- helpers ----------
