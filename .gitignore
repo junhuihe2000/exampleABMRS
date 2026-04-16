@@ -3,6 +3,12 @@
 .RData
 .Ruserdata
 
+# Ignore all data/report artifacts by extension
+*.RData
+*.rdata
+*.csv
+*.html
+
 # Ignore generated fmri outputs
 fmri/output/*.RData
 
