@@ -41,7 +41,7 @@ rep_count <- get_rep_count(args)
 
 set.seed(1234 + job_id)
 
-out_dir <- file.path(repo_root, "output", "surface_fitting")
+out_dir <- file.path(repo_root, "output", "surface_fitting_nugget")
 if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 job_tag <- sprintf("job-%04d", job_id)
@@ -148,6 +148,7 @@ for (k in seq_len(rep_count)) {
       y_train <- f(x_train)
       y_obs <- y_train + rnorm(m_train, 0, noise)
       y_test <- f(x_test)
+      y_obs_test <- y_test + rnorm(m_test, 0, noise)
 
       censor_lo <- max(1L, round(p * m_test))
       censor_hi <- min(m_test, round((1 - p) * m_test))
@@ -155,37 +156,40 @@ for (k in seq_len(rep_count)) {
       # ABMRS with gamma = 0.8
       mebars_1 <- mebars(x_train, y_obs, xmin, xmax, gamma = 0.8, times = c(2, 2))
       mebars_1$rjmcmc(burns = 20000, steps = 20000)
-      pred_1 <- mebars_1$predict(x_test)
+      pred_1 <- mebars_1$predict(x_test, nugget = FALSE)
       y_mebars_1 <- rowMeans(pred_1)
       mse_array[row_idx, "ABMRS (gamma=0.8)", k] <- mean((y_mebars_1 - y_test)^2)
       censor_mse_array[row_idx, "ABMRS (gamma=0.8)", k] <- mean(sort((y_mebars_1 - y_test)^2)[censor_lo:censor_hi])
-      lower_bound_1 <- apply(pred_1, 1, quantile, probs = lower_level)
-      upper_bound_1 <- apply(pred_1, 1, quantile, probs = upper_level)
-      cov_array[row_idx, "ABMRS (gamma=0.8)", k] <- mean((y_test >= lower_bound_1) & (y_test <= upper_bound_1))
+      pred_1_nugget <- mebars_1$predict(x_test, nugget = TRUE)
+      lower_bound_1 <- apply(pred_1_nugget, 1, quantile, probs = lower_level)
+      upper_bound_1 <- apply(pred_1_nugget, 1, quantile, probs = upper_level)
+      cov_array[row_idx, "ABMRS (gamma=0.8)", k] <- mean((y_obs_test >= lower_bound_1) & (y_obs_test <= upper_bound_1))
       bandwidth_array[row_idx, "ABMRS (gamma=0.8)", k] <- mean(upper_bound_1 - lower_bound_1)
 
       # ABMRS with gamma = 1
       mebars_2 <- mebars(x_train, y_obs, xmin, xmax, gamma = 1, times = c(2, 2))
       mebars_2$rjmcmc(burns = 20000, steps = 20000)
-      pred_2 <- mebars_2$predict(x_test)
+      pred_2 <- mebars_2$predict(x_test, nugget = FALSE)
       y_mebars_2 <- rowMeans(pred_2)
       mse_array[row_idx, "ABMRS (gamma=1)", k] <- mean((y_mebars_2 - y_test)^2)
       censor_mse_array[row_idx, "ABMRS (gamma=1)", k] <- mean(sort((y_mebars_2 - y_test)^2)[censor_lo:censor_hi])
-      lower_bound_2 <- apply(pred_2, 1, quantile, probs = lower_level)
-      upper_bound_2 <- apply(pred_2, 1, quantile, probs = upper_level)
-      cov_array[row_idx, "ABMRS (gamma=1)", k] <- mean((y_test >= lower_bound_2) & (y_test <= upper_bound_2))
+      pred_2_nugget <- mebars_2$predict(x_test, nugget = TRUE)
+      lower_bound_2 <- apply(pred_2_nugget, 1, quantile, probs = lower_level)
+      upper_bound_2 <- apply(pred_2_nugget, 1, quantile, probs = upper_level)
+      cov_array[row_idx, "ABMRS (gamma=1)", k] <- mean((y_obs_test >= lower_bound_2) & (y_obs_test <= upper_bound_2))
       bandwidth_array[row_idx, "ABMRS (gamma=1)", k] <- mean(upper_bound_2 - lower_bound_2)
 
       # ABMRS with gamma = 1.2
       mebars_3 <- mebars(x_train, y_obs, xmin, xmax, gamma = 1.2, times = c(2, 2))
       mebars_3$rjmcmc(burns = 20000, steps = 20000)
-      pred_3 <- mebars_3$predict(x_test)
+      pred_3 <- mebars_3$predict(x_test, nugget = FALSE)
       y_mebars_3 <- rowMeans(pred_3)
       mse_array[row_idx, "ABMRS (gamma=1.2)", k] <- mean((y_mebars_3 - y_test)^2)
       censor_mse_array[row_idx, "ABMRS (gamma=1.2)", k] <- mean(sort((y_mebars_3 - y_test)^2)[censor_lo:censor_hi])
-      lower_bound_3 <- apply(pred_3, 1, quantile, probs = lower_level)
-      upper_bound_3 <- apply(pred_3, 1, quantile, probs = upper_level)
-      cov_array[row_idx, "ABMRS (gamma=1.2)", k] <- mean((y_test >= lower_bound_3) & (y_test <= upper_bound_3))
+      pred_3_nugget <- mebars_3$predict(x_test, nugget = TRUE)
+      lower_bound_3 <- apply(pred_3_nugget, 1, quantile, probs = lower_level)
+      upper_bound_3 <- apply(pred_3_nugget, 1, quantile, probs = upper_level)
+      cov_array[row_idx, "ABMRS (gamma=1.2)", k] <- mean((y_obs_test >= lower_bound_3) & (y_obs_test <= upper_bound_3))
       bandwidth_array[row_idx, "ABMRS (gamma=1.2)", k] <- mean(upper_bound_3 - lower_bound_3)
 
       # Thin plate spline
@@ -195,43 +199,46 @@ for (k in seq_len(rep_count)) {
       model_tps <- gam(y ~ s(x1, x2, k = 200), data = train_df)
       pred_tps <- predict(model_tps, newdata = x_test_df, se.fit = TRUE)
       y_tps <- pred_tps$fit
-      lower_bound_tps <- pred_tps$fit - qnorm(upper_level) * pred_tps$se.fit
-      upper_bound_tps <- pred_tps$fit + qnorm(upper_level) * pred_tps$se.fit
+      se_tps <- sqrt(pred_tps$se.fit^2 + model_tps$sig2)
+      lower_bound_tps <- pred_tps$fit - qnorm(upper_level) * se_tps
+      upper_bound_tps <- pred_tps$fit + qnorm(upper_level) * se_tps
       mse_array[row_idx, "Thin Plate Spline", k] <- mean((y_tps - y_test)^2)
       censor_mse_array[row_idx, "Thin Plate Spline", k] <- mean(sort((y_tps - y_test)^2)[censor_lo:censor_hi])
-      cov_array[row_idx, "Thin Plate Spline", k] <- mean((y_test >= lower_bound_tps) & (y_test <= upper_bound_tps))
+      cov_array[row_idx, "Thin Plate Spline", k] <- mean((y_obs_test >= lower_bound_tps) & (y_obs_test <= upper_bound_tps))
       bandwidth_array[row_idx, "Thin Plate Spline", k] <- mean(upper_bound_tps - lower_bound_tps)
 
       # Tensor product spline
       model_tep <- gam(y ~ te(x1, x2, k = 15), data = train_df)
       pred_tep <- predict(model_tep, newdata = x_test_df, se.fit = TRUE)
       y_tep <- pred_tep$fit
-      lower_bound_tep <- pred_tep$fit - qnorm(upper_level) * pred_tep$se.fit
-      upper_bound_tep <- pred_tep$fit + qnorm(upper_level) * pred_tep$se.fit
+      se_tep <- sqrt(pred_tep$se.fit^2 + model_tep$sig2)
+      lower_bound_tep <- pred_tep$fit - qnorm(upper_level) * se_tep
+      upper_bound_tep <- pred_tep$fit + qnorm(upper_level) * se_tep
       mse_array[row_idx, "Tensor Product Spline", k] <- mean((y_tep - y_test)^2)
       censor_mse_array[row_idx, "Tensor Product Spline", k] <- mean(sort((y_tep - y_test)^2)[censor_lo:censor_hi])
-      cov_array[row_idx, "Tensor Product Spline", k] <- mean((y_test >= lower_bound_tep) & (y_test <= upper_bound_tep))
+      cov_array[row_idx, "Tensor Product Spline", k] <- mean((y_obs_test >= lower_bound_tep) & (y_obs_test <= upper_bound_tep))
       bandwidth_array[row_idx, "Tensor Product Spline", k] <- mean(upper_bound_tep - lower_bound_tep)
 
       # Gaussian process regression
       gp_model <- gpkm(X = x_train, Z = y_obs, kernel = k_Matern52(D = 2))
-      pred_gp <- gp_model$pred(x_test, se = TRUE, mean_dist = TRUE)
+      pred_gp <- gp_model$pred(x_test, se = TRUE, mean_dist = FALSE)
       mse_array[row_idx, "Gaussian Process", k] <- mean((pred_gp$mean - y_test)^2)
       censor_mse_array[row_idx, "Gaussian Process", k] <- mean(sort((pred_gp$mean - y_test)^2)[censor_lo:censor_hi])
       lower_bound_gp <- pred_gp$mean - qnorm(upper_level) * pred_gp$se
       upper_bound_gp <- pred_gp$mean + qnorm(upper_level) * pred_gp$se
-      cov_array[row_idx, "Gaussian Process", k] <- mean((y_test >= lower_bound_gp) & (y_test <= upper_bound_gp))
+      cov_array[row_idx, "Gaussian Process", k] <- mean((y_obs_test >= lower_bound_gp) & (y_obs_test <= upper_bound_gp))
       bandwidth_array[row_idx, "Gaussian Process", k] <- mean(upper_bound_gp - lower_bound_gp)
 
       # BASS
       bass_model <- bass(xx = x_train, y = y_obs, nmcmc = 10000, nburn = 9000, verbose = FALSE)
-      pred_bass <- predict(bass_model, x_test)
+      pred_bass <- predict(bass_model, x_test, nugget = FALSE)
       y_bass <- colMeans(pred_bass)
       mse_array[row_idx, "BASS", k] <- mean((y_bass - y_test)^2)
       censor_mse_array[row_idx, "BASS", k] <- mean(sort((y_bass - y_test)^2)[censor_lo:censor_hi])
-      lower_bound_bass <- apply(pred_bass, 2, quantile, probs = lower_level)
-      upper_bound_bass <- apply(pred_bass, 2, quantile, probs = upper_level)
-      cov_array[row_idx, "BASS", k] <- mean((y_test >= lower_bound_bass) & (y_test <= upper_bound_bass))
+      pred_bass_nugget <- predict(bass_model, x_test, nugget = TRUE)
+      lower_bound_bass <- apply(pred_bass_nugget, 2, quantile, probs = lower_level)
+      upper_bound_bass <- apply(pred_bass_nugget, 2, quantile, probs = upper_level)
+      cov_array[row_idx, "BASS", k] <- mean((y_obs_test >= lower_bound_bass) & (y_obs_test <= upper_bound_bass))
       bandwidth_array[row_idx, "BASS", k] <- mean(upper_bound_bass - lower_bound_bass)
     }
   }

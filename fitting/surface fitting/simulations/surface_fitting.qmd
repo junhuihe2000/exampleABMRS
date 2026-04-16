@@ -146,6 +146,7 @@ for(i in c(1:3)) {
   x_test_df = data.frame(x1 = x_test[,1], x2 = x_test[,2])
 
   model_tps = gam(y~s(x1, x2, k = 200), data = train_df)
+  # model_tps$sig2: estimated variance parameter
   pred_tps = predict(model_tps, newdata = x_test_df, se.fit = TRUE)
   y_tps = pred_tps$fit
   lower_bound_tps = pred_tps$fit - qnorm(upper_level)*pred_tps$se.fit
@@ -157,6 +158,7 @@ for(i in c(1:3)) {
 
   # Tensor Product Spline
   model_tep = gam(y~te(x1, x2, k = 15), data = train_df)
+  # model_tep$sig2: estimated variance parameter
   pred_tep = predict(model_tep, newdata = x_test_df, se.fit = TRUE)
   y_tep = pred_tep$fit
   lower_bound_tep = pred_tep$fit - qnorm(upper_level)*pred_tep$se.fit
@@ -168,6 +170,7 @@ for(i in c(1:3)) {
 
   # Gaussian Process Regression
   gp_model = gpkm(X = x_train, Z = y_obs, kernel = k_Matern52(D = 2))
+  # gp_model$s2_hat * gp_model$nug: estimated variance parameter
   pred_gp = gp_model$pred(x_test, se = TRUE, mean_dist = TRUE)
   mse_array[i,"Gaussian Process"] = mean((pred_gp$mean - y_test)^2)
   censor_mse_array[i,"Gaussian Process"] = mean(sort((pred_gp$mean - y_test)^2)[round(p*m_test):round((1-p)*m_test)])
@@ -321,7 +324,7 @@ xmin = c(0, 0)
 xmax = c(1, 1)
 
 p = 0.025 # censoring proportion
-level = 0.95 # credible level
+level = 0.75 # credible level
 upper_level = (1 + level)/2
 lower_level = (1 - level)/2
 cases = c("Case 1","Case 2","Case 3", "Case 4", "Case 5")
@@ -416,7 +419,7 @@ for(i in c(1:length(cases))) {
 
   # BASS
   bass = bass(xx = x_train, y = y_obs, nmcmc = 10000, nburn = 9000, verbose = FALSE)
-  pred_bass = predict(bass, x_test)
+  pred_bass = predict(bass, x_test, nugget=TRUE)
   y_bass = colMeans(pred_bass)
   mse_array[i,"BASS"] = mean((y_bass - y_test)^2)
   censor_mse_array[i,"BASS"] = mean(sort((y_bass - y_test)^2)[round(p*m_test):round((1-p)*m_test)])

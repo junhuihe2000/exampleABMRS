@@ -155,8 +155,8 @@ knitr::kable(mse_summary, caption = "Mean and SD of MSE across all share_knots e
 # Concatenate surface_fitting outputs and compute mean/sd by scenario and method
 
 # Paths to saved arrays from the Slurm runs
-out_dir <- "output/surface_fitting"
-table_dir <- "tables/surface_fitting"
+out_dir <- "output/surface_fitting_nugget"
+table_dir <- "tables/surface_fitting_nugget"
 if(!dir.exists(table_dir)) {
     dir.create(table_dir, recursive = TRUE)
 }
@@ -248,8 +248,8 @@ knitr::kable(bandwidth_summary, caption = "Mean and SD of bandwidth across all s
 # Concatenate surface_fitting_appendix outputs and compute mean/sd by scenario and method
 
 # Paths to saved arrays from the Slurm runs
-out_dir <- "output/surface_fitting_appendix"
-table_dir <- "tables/surface_fitting_appendix"
+out_dir <- "output/surface_fitting_appendix_nugget"
+table_dir <- "tables/surface_fitting_appendix_nugget"
 if(!dir.exists(table_dir)) {
     dir.create(table_dir, recursive = TRUE)
 }
