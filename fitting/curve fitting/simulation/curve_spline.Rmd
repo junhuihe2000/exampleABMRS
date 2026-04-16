@@ -1,0 +1,250 @@
+---
+title: "Curve Spline"
+author: "He Junhui"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(EBARS)
+library(splines)
+library(ggplot2)
+```
+
+```{r}
+p = ggplot() + geom_point(aes(x_train,y_obs),size=0.6,col="red") + geom_line(aes(x_train,y_train)) + theme(axis.title.x=element_blank(),axis.title.y=element_blank())
+ggsave(filename = file.path("plots","spline_regression.pdf"), p, height = 4)
+```
+
+
+```{r}
+p = 0.025 # censored threshold
+mse_mat = matrix(NA,7,3)
+colnames(mse_mat) = c("Case 1", "Case 2", "Case 3")
+rownames(mse_mat) = c("EBARS 1", "EBARS 2", "EBARS 3", "BARS", "Smooth Spline", "Kernel Smooth", "Local Polynomial")
+```
+
+```{r}
+set.seed(1234)
+```
+
+## Case 1
+
+```{r}
+f = function(x) {
+  return(20*(x%%0.167))
+}
+```
+
+```{r}
+splinef <- function(x){
+  knot = c(0.4,0.4,0.4,0.4,0.7)
+  beta = matrix(c(2,-5,5,2,-3,-1,2),ncol=1)
+  B = ns(x,knots=knot,intercept=TRUE,Boundary.knots=c(0,1))
+  y = B%*%beta
+  return(y)
+}
+```
+
+
+
+```{r}
+m_train = 200; m_test = 100
+# generate train data
+x_train = seq(0,1,length.out=m_train)
+# y_train = 10*exp(-100*(x_train-0.5)^2)
+y_train = sapply(x_train,f)
+y_obs = y_train + rnorm(m_train,0,0.2)
+# generate test data
+x_new = runif(m_test,0,1)
+# y_new = 10*exp(-100*(x_new-0.5)^2)
+y_new = sapply(x_new,f)
+```
+
+```{r}
+p1.1 <- ggplot() + geom_point(aes(x_train,y_obs),size=1,col="red") + geom_line(aes(x_train,y_train)) + 
+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank()) +
+  theme(axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+print(p1.1)
+```
+
+```{r}
+ebars_1 = ebars(x_train, y_obs, gamma = 1, times = 5, intercept = TRUE)
+ebars_1$mcmc(burns=1000,steps=1000)
+y_ebars_1 = ebars_1$predict(x_new)
+mse_mat[1,1] = mean(sort((y_new-y_ebars_1)^2)[round(p*m_test):round((1-p)*m_test)])
+```
+
+```{r}
+y_hat = ebars_1$predict(x_train)
+p2.1 <- ggplot() + geom_line(aes(x_train,y_hat)) + 
+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank()) +
+  theme(axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+print(p2.1)
+```
+
+```{r}
+ebars_2 = ebars(x_train, y_obs, gamma = 0.5, times = 2, intercept = TRUE)
+ebars_2$mcmc(burns=1000,steps=1000)
+y_ebars_2 = ebars_2$predict(x_new)
+mse_mat[2,1] = mean(sort((y_new-y_ebars_2)^2)[round(p*m_test):round((1-p)*m_test)])
+```
+
+```{r}
+y_hat = ebars_2$predict(x_train)
+p3.1 <- ggplot() + geom_line(aes(x_train,y_hat)) + 
+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank()) +
+  theme(axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+print(p3.1)
+```
+
+```{r}
+ebars_3 = ebars(x_train, y_obs, gamma = 0, times = 1, intercept = TRUE)
+ebars_3$mcmc(burns=1000,steps=1000)
+y_ebars_3 = ebars_3$predict(x_new)
+mse_mat[3,1] = mean(sort((y_new-y_ebars_3)^2)[round(p*m_test):round((1-p)*m_test)])
+```
+
+```{r}
+y_hat = ebars_3$predict(x_train)
+p4.1 <- ggplot() + geom_line(aes(x_train,y_hat)) + 
+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank()) +
+  theme(axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+print(p4.1)
+```
+
+```{r}
+source("bars.R")
+```
+
+```{r}
+bars_conf = BARS(x_train,y_obs, burns_in = 1000, effective_length = 1000)
+y_bars = bars_fit(x_new, bars_conf)
+mse_mat[4,1] = mean(sort((y_new-y_bars)^2)[round(p*m_test):round((1-p)*m_test)])
+```
+
+```{r}
+y_hat = bars_fit(x_train, bars_conf)
+p5.1 <- ggplot() + geom_line(aes(x_train,y_hat)) + 
+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank()) +
+  theme(axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+print(p5.1)
+```
+
+```{r}
+splinesmooth = smooth.spline(x_train,y_obs)
+y_spline = predict(splinesmooth,x_new)$y
+mse_mat[5,1] = mean(sort((y_new-y_spline)^2)[round(p*m_test):round((1-p)*m_test)])
+```
+
+```{r}
+y_hat = predict(splinesmooth,x_train)$y
+p6.1 <- ggplot() + geom_line(aes(x_train,y_hat)) + 
+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank()) +
+  theme(axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+print(p6.1)
+```
+
+```{r}
+df = data.frame(x=x_train,y=y_obs)
+locpol = loess(y~x,data=df,degree=2)
+y_locpol = predict(locpol,x_new)
+mse_mat[6,1] = mean(sort((y_new-y_locpol)^2)[round(p*m_test):round((1-p)*m_test)])
+```
+
+```{r}
+y_hat = predict(locpol,x_train)
+p7.1 <- ggplot() + geom_line(aes(x_train,y_hat)) + 
+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank()) +
+  theme(axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+print(p7.1)
+```
+
+```{r}
+kernel = ksmooth(x_train,y_obs,"normal",x.points = x_new)
+y_kernel = kernel$y
+mse_mat[7,1] = mean(sort((y_new-y_kernel)^2)[round(p*m_test):round((1-p)*m_test)])
+```
+
+```{r}
+y_hat = ksmooth(x_train,y_obs,"normal",x.points = x_train)$y
+p8.1 <- ggplot() + geom_line(aes(x_train,y_hat)) + 
+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank()) +
+  theme(axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+print(p8.1)
+```
+
+
+
+*************************************************
+```{r}
+knot = c(0.4,0.4,0.4,0.4,0.7)
+beta = matrix(c(3,-5,5,-3,3,-5,3,-2),ncol=1)
+m_train = 500; m_test = 200
+```
+
+```{r}
+# generate train data set
+x_train = c(0,sort(runif(m_train, 0, 1))[c(-1,-m_train)],1)
+B = bs(x_train,knots=knot,Boundary.knots=c(0,1))
+y_train = B%*%beta*10
+y_obs = y_train + rnorm(m_train,0,1)
+
+# generate test data set
+x_new = runif(m_test,0,1)
+y_new = predict(B,x_new)%*%beta*10
+```
+
+```{r}
+ggplot() + geom_point(aes(x_train,y_obs)) + xlab("") + ylab("")
+```
+
+```{r}
+time_start = Sys.time()
+my_ebars = ebars(x_train,y_obs)
+my_ebars$mcmc()
+time_end = Sys.time()
+print(time_end-time_start)
+```
+
+```{r}
+my_ebars$knots()
+```
+
+
+```{r}
+y_hat = my_ebars$predict(x_new)
+err = y_hat - y_new
+p = 0.025; m_win = round(m_test*p)
+err_win = sort(abs(err))[(m_win+1):(m_test-m_win)]
+sum((err_win)^2)/length(err_win)
+```
+
+```{r}
+ggplot() + geom_point(aes(x_train,my_ebars$predict(x_train)),color="red") + 
+  ggtitle("EBARS") + xlab("") + ylab("") + theme(plot.title = element_text(hjust=0.5))
+```
+
+
+```{r}
+# local polynomial regression method
+df = data.frame(x=x_train,y=y_obs)
+locpm = loess(y~x,data=df,degree=2,span=0.15)
+y_locpm = predict(locpm,x_new)
+```
+
+```{r}
+err = y_locpm - y_new
+p = 0.025; m_win = round(m_test*p)
+err_win = sort(abs(err))[(m_win+1):(m_test-m_win)]
+sum((err_win)^2)/length(err_win)
+```
+
+```{r}
+ggplot() + geom_point(aes(x_new,y_locpm),color="red") + 
+  ggtitle("Local Polynomial") + xlab("") + ylab("") + theme(plot.title = element_text(hjust=0.5))
+```

@@ -1,0 +1,53 @@
+---
+title: "Trivariate Spline"
+author: "Junhui He"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(EBARS)
+```
+
+```{r}
+set.seed(42)
+beta = rnorm(24)
+f = function(x) {
+  xi_1 = c(0.2, 0.5)
+  xi_2 = c(0.4, 0.6, 0.9)
+  xi_3 = c(0.7)
+  B = tri_tensor_spline(x, xi_1, xi_2, xi_3, 1, 1, 1)
+  return(B%*%cbind(beta))
+}
+```
+
+```{r}
+# generate training data
+m_train = 1000
+x_train = cbind(c(0,runif(m_train-2,0,1),1),c(0,runif(m_train-2,0,1),1),c(0,runif(m_train-2,0,1),1))
+y_train = f(x_train)
+y_obs = y_train + rnorm(m_train,0,0.2)
+# generate test set
+m_test = 200
+x_new = cbind(runif(m_test,0,1),runif(m_test,0,1),runif(m_test,0,1))
+y_new = f(x_new)
+```
+
+```{r}
+# run EBARS
+time_start = Sys.time()
+my_triebars = triebars(x_train, y_obs, gamma = 1, degree_1 = 1, degree_2 = 1, degree_3 = 1, intercept_1 = FALSE, intercept_2 = FALSE, intercept_3 = FALSE)
+my_triebars$mcmc(burns=500,steps=500)
+y_triebars = my_triebars$predict(x_new)
+time_end = Sys.time()
+print(time_end - time_start)
+```
+
+```{r}
+my_triebars$knots()
+```
+

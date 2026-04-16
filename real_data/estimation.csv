@@ -1,0 +1,13 @@
+,Estimate,Standard Error,P Value
+Knot 1,9.8947,0.7124186,
+Knot 2,19.65598,1.0352378,
+Intercept,2.150091,0.030369,<0.001
+Slope 1,-0.040573,0.004622,<0.001
+Change in Slopes at Knot 1,0.116263,0.007928,<0.001
+Change in Slopes at Knot 2,-0.070706,0.005602,<0.001
+,,,
+,,,
+,,,
+Sample Quantiles,2.50%,97.50%,
+Knot 1,8.541608,11.422168,
+Knot 2,17.95487,21.96707,

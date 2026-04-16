@@ -1,0 +1,107 @@
+---
+title: "Summary Output Results"
+author: "Junhui He"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# file path
+data_path = "G:/Phd/Data/HCPFMRI/WM_contrasts"
+# read data
+index_subjects = read.csv(file.path(data_path, "index2bk-0bk.csv"))
+
+aal_regions = c("Par.Inf.L", "Fro.Mid.Ord.L", "Par.Sup.L", "Par.Sup.R", "Fro.Mid.Ord.R", "Fro.Inf.Ope.L", "Pre.L", "Fro.Mid.L", "Par.Inf.R", "Fro.Sup.Orb.L")
+aal_codes = c(6201, 2211, 6101, 6102, 2212, 2301, 2001, 2201, 6202, 2111)
+```
+
+
+```{r}
+test_mses = array(NA, c(3, 10, 10))
+
+for (i in 1:dim(test_mses)[3]) {
+  # subject_name = index_subjects$subject[i]
+  load(file.path("output", paste0("test_mse_", i, ".RData")))
+  test_mses[,,i] = test_mse
+}
+
+test_mse_ave = data.frame(round(rowMeans(test_mses, dims = 2)*100, digits = 3))
+colnames(test_mse_ave) = aal_regions
+rownames(test_mse_ave) = c("ABMRS", "TPS", "TEP")
+print(test_mse_ave)
+```
+
+```{r}
+idx = c(1, 3, 4, 7, 8)
+print(test_mse_ave[,idx])
+```
+
+
+```{r}
+test_mse_sd = array(NA, c(3, 10))
+for (i in 1:3) {
+  for (j in 1:10) {
+    test_mse_sd[i, j] = sd(test_mses[i, j, ])
+  }
+}
+test_mse_sd = data.frame(round(test_mse_sd*100, digits = 3))
+# colnames(test_mse_sd) = c("slice_25", "slice_35", "slice_50", "slice_65")
+rownames(test_mse_sd) = c("ABMRS", "TPS", "TEP")
+print(test_mse_sd[,idx])
+```
+
+## Peak detection 
+
+```{r}
+load(file = file.path("data/2bk-0bk_contrast.RData"))
+```
+
+
+```{r}
+code = aal_codes[idx[5]]
+load(file.path("output", paste0("region_", code, ".RData")))
+
+dim(peak_df)
+summary(peak_df)
+```
+
+```{r}
+region_idx = contrast_map_array[,5] == code
+contrast_region = contrast_map_array[region_idx,]
+
+quantiles = quantile(contrast_region[,4], c(0.025, 0.975))
+num_pos_peak = sum(peak_df$y_hat[peak_df$max] > quantiles[2])
+num_neg_peak = sum(peak_df$y_hat[peak_df$min] < quantiles[1])
+
+cat("number of positive peaks:", num_pos_peak, "\n")
+cat("number of negative peaks:", num_neg_peak, "\n")
+```
+
+
+```{r}
+global_max_idx = which.max(abs(contrast_region[,4]))
+contrast_region[global_max_idx,]
+```
+
+```{r}
+peak_df[peak_df$min==TRUE,]
+```
+
+```{r}
+peak_df[peak_df$max==TRUE,]
+```
+
+
+
+```{r}
+summary(contrast_region)
+```
+
+```{r}
+quantile(contrast_region[,4], c(0, 0.025, 0.05, 0.95, 0.975, 1))
+```
+

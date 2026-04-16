@@ -1,0 +1,19 @@
+"case","n_train","method","mean","sd"
+"Case 1",500,"BASS (degree=1)",0.59,0.06
+"Case 1",500,"BASS (degree=2)",0.423,0.058
+"Case 1",500,"BASS (degree=3)",0.446,0.13
+"Case 1",1000,"BASS (degree=1)",0.432,0.043
+"Case 1",1000,"BASS (degree=2)",0.323,0.027
+"Case 1",1000,"BASS (degree=3)",0.304,0.046
+"Case 2",500,"BASS (degree=1)",2.916,0.379
+"Case 2",500,"BASS (degree=2)",3.169,0.502
+"Case 2",500,"BASS (degree=3)",3.402,0.557
+"Case 2",1000,"BASS (degree=1)",2.466,0.26
+"Case 2",1000,"BASS (degree=2)",2.545,0.264
+"Case 2",1000,"BASS (degree=3)",2.779,0.27
+"Case 3",500,"BASS (degree=1)",3.45,0.407
+"Case 3",500,"BASS (degree=2)",3.421,0.423
+"Case 3",500,"BASS (degree=3)",3.631,0.46
+"Case 3",1000,"BASS (degree=1)",2.706,0.222
+"Case 3",1000,"BASS (degree=2)",2.723,0.28
+"Case 3",1000,"BASS (degree=3)",2.848,0.27

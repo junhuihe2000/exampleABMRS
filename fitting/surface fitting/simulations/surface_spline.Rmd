@@ -1,0 +1,96 @@
+---
+title: "Surface Spline"
+author: "He Junhui"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r,include=FALSE}
+library(EBARS)
+library(plot3D)
+```
+
++ Function
+
+```{r}
+f1 = function(x) {
+  return(-40*(exp(-(x[,1]-0.2)^2/0.1-(x[,2]-0.3)^2/0.1)+exp(-(x[,1]-0.7)^2/0.1-(x[,2]-0.8)^2/0.1)))
+}
+
+f2 = function(x) {
+  return(-100*exp(-(x[,1]-0.5)^2/0.01-(x[,2]-0.5)^2/0.01))
+}
+
+f3 = function(x) {
+  xi_1 = c(0.2,0.5)
+  xi_2 = c(0.4,0.4,0.4,0.4,0.7)
+  beta = c(-1.21, 0.28, 1.08, -2.35, 0.43, 0.51, -0.57, -0.55, -0.56, -0.89, -0.48, -1.00, -0.78,  0.06,  0.96, -0.11, -0.51, -0.91, -0.84,  2.42,  0.13, -0.49, -0.44,  0.46, -0.69, -1.45,  0.57, -1.02, -0.02, -0.94,  1.10, -0.48, -0.71, -0.50, -1.63, -1.17, -2.18, -1.34, -0.29, -0.47)
+  B = tensor_spline(x,xi_1,xi_2)
+  return(10*B%*%cbind(beta))
+}
+
+f4 = function(x) {
+  xi_1 = c(0.2,0.2,0.2,0.2,0.6)
+  xi_2 = c(0.5,0.5,0.5,0.5,0.7)
+  beta = c(0.83, -0.28, -0.36,  0.09,  2.25,  0.83,  1.31,  2.50,  1.17, -0.43, -1.00, -1.11, -0.06,  1.17,  1.05,  0.06, -0.74,  0.93,  1.67,  0.56, -0.75,  1.26, 0.04,  0.19,  0.46, -0.43,  0.02,  0.70,  0.97, -0.62, -0.86,  0.07, -1.05, -2.75, -1.13, -0.86,  1.56,  1.02,  1.04, -1.12, -1.07,  0.97,  0.17, -0.90,  0.16, -0.50, -0.97, -0.11, 1.09, -1.21, -1.77, -0.49,  0.32,  1.46,  1.54, -0.34, -1.08, -1.49, -0.25, -0.12, -0.65,  0.31,  0.12, -0.84)
+  B = tensor_spline(x,xi_1,xi_2)
+  return(10*B%*%cbind(beta))
+}
+```
+
+```{r}
+p = 0.025 # censored threshold
+noises = c(4,3,1,1.5)
+```
+
+
++ Case I
+```{r}
+set.seed(1234)
+```
+
+```{r}
+# generate training data
+m_train = 1000
+x_train = cbind(c(0,runif(m_train-2,0,1),1),c(0,runif(m_train-2,0,1),1))
+y_train = f4(x_train)
+y_obs = y_train + rnorm(m_train,0,0.1)
+# generate test set
+m_test = 200
+x_new = cbind(runif(m_test,0,1),runif(m_test,0,1))
+y_new = f4(x_new)
+```
+
+```{r}
+grid = seq(0,1,by=0.01)
+```
+
+```{r}
+scatter3D(x_train[,1], x_train[,2], y_obs,
+          theta = 20, phi = 20,
+          pch = 20, box=TRUE, cex = 0.4, colkey = FALSE, 
+          border="black", shade=0.8, 
+          bty = "g", ticktype = "detailed",
+          main="Surface Case")
+```
+
+```{r}
+contour(x=grid,y=grid,z=outer(grid,grid,function(x,y) {return(f4(cbind(x,y)))}),axes = FALSE,frame.plot =TRUE)
+```
+
+
+```{r}
+# run suface EBARS
+my_binebars = binebars(x_train, y_obs,gamma=1,times_1=3,times_2=3,intercept_1=T,intercept_2=T)
+my_binebars$mcmc(burns=500,steps=500)
+y_binebars = my_binebars$predict(x_new)
+mean(sort((y_binebars-y_new)^2)[round(p*m_test):((1-p)*m_test)])
+```
+
+```{r}
+contour(x=grid,y=grid,z=outer(grid,grid,function(x,y) {return(my_binebars$predict(cbind(x,y)))}))
+```

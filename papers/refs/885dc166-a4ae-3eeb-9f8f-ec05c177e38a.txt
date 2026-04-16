@@ -1,0 +1,14 @@
+@article{885dc166-a4ae-3eeb-9f8f-ec05c177e38a,
+ ISSN = {10170405, 19968507},
+ URL = {http://www.jstor.org/stable/44841925},
+ abstract = {When a computer code is used to simulate a complex system, one of the fundamental tasks is to assess the sensitivity of the simulator to the different input parameters. In the case of computationally expensive simulators, this is often accomplished via a surrogate statistical model, a statistical output emulator. An effective emulator is one that provides good approximations to the computer code output for wide ranges of input values. In addition, an emulator should be able to handle large dimensional simulation output for a relevant number of inputs; it should flexibly capture heterogeneities in the variability of the response surface; it should be fast to evaluate for arbitrary combinations of input parameters, and it should provide an accurate quantification of the emulation uncertainty. In this paper we discuss the Bayesian approach to multivariate adaptive regression splines (BMARS) as an emulator for a computer model that outputs curves. We introduce modifications to traditional BMARS approaches that allow for fitting large amounts of data and allow for more efficient MCMC sampling. We emphasize the ease with which sensitivity analysis can be performed in this situation. We present a sensitivity analysis of a computer model of the deformation of a protective plate used in pressure-driven experiments. Our example serves as an illustration of the ability of BMARS emulators to fulfill all the necessities of computability, flexibility and reliable calculation on relevant measures of sensitivity.},
+ author = {Devin Francom and Bruno Sansó and Ana Kupresanin and Gardar Johannesson},
+ journal = {Statistica Sinica},
+ number = {2},
+ pages = {791--816},
+ publisher = {Institute of Statistical Science, Academia Sinica},
+ title = {SENSITIVITY ANALYSIS AND EMULATION FOR FUNCTIONAL DATA USING BAYESIAN ADAPTIVE SPLINES},
+ urldate = {2025-12-31},
+ volume = {28},
+ year = {2018}
+}

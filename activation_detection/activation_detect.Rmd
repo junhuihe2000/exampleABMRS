@@ -1,0 +1,173 @@
+---
+title: "Detect nonzero regions"
+author: "Junhui He"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# load package
+library(EBARS)
+library(ggplot2)
+library(splines)
+source("bars.R")
+```
+
+## Curve cases
+
+```{r}
+# define curve equations
+f_1 <- function(x) {
+  return(sin(4*pi*(x)))
+}
+
+f_2 <- function(x){
+  knot = c(0.4,0.4,0.4,0.4,0.7)
+  beta = matrix(c(2,-5,5,2,-3,-1,2),ncol=1)
+  B = ns(x,knots=knot,intercept=TRUE,Boundary.knots=c(0,1))
+  y = 0.4*B%*%beta
+  return(y)
+}
+```
+
+```{r}
+set.seed(1234)
+```
+
+```{r}
+thres_1 = 0.5
+sd_1 = 0.2
+m = 200
+x = seq(0, 1, length.out=m)
+region = abs(f_2(x))>thres_1
+y = f_2(x) * region # hard threshold
+y_obs = y + rnorm(m, 0, sd_1)
+
+ggplot() + geom_point(aes(x,y_obs),size=0.6,col="red") + geom_line(aes(x,y)) + theme(axis.title.x=element_blank(),axis.title.y=element_blank())
+```
+
+```{r}
+# apply EBARS
+model_ebars = ebars(x, y_obs, gamma=1, n=1000)
+model_ebars$mcmc(burns=2000, steps=2000)
+
+# fit a spline model
+z = bs(x, knots=model_ebars$knots())
+lm_model = lm(y_obs ~ z)
+
+# compute 95% predictive intervals
+pred_int = as.data.frame(predict(lm_model, z, interval="prediction", level=0.95))
+# calculate the activation region
+region_pred = (pred_int$lwr>0) | (pred_int$upr<0)
+```
+
+```{r}
+# apply BARS
+model_bars = BARS(x, y_obs, burns_in=2000, effective_length=2000)
+
+# fit a spline model
+z = bs(x, knots=model_bars$knots)
+lm_model = lm(y_obs ~ z)
+
+# compute 95% predictive intervals
+pred_int = as.data.frame(predict(lm_model, z, interval="prediction", level=0.95))
+# calculate the activation region
+region_pred = (pred_int$lwr>0) | (pred_int$upr<0)
+```
+
+```{r}
+ggplot() + geom_point(aes(x,pred_int$fit), col='red', size=1) + geom_line(aes(x, pred_int$lwr)) + geom_line(aes(x, pred_int$upr))
+```
+
+```{r}
+ggplot() + geom_point(aes(x, 0.1, color=region), size=1) + geom_point(aes(x, 0, color=region_pred), size=1) + ylim(-0.3, 0.4)
+```
+
+## Surface cases
+
+```{r}
+f_sur = function(x) {
+  xi_1 = c(0.2,0.5)
+  xi_2 = c(0.4,0.4,0.4,0.4,0.7)
+  beta = c(-1.21, 0.28, 1.08, -2.35, 0.43, 0.51, -0.57, -0.55, -0.56, -0.89, -0.48, -1.00, -0.78,  0.06,  0.96, -0.11, -0.51, -0.91, -0.84,  2.42,  0.13, -0.49, -0.44,  0.46, -0.69, -1.45,  0.57, -1.02, -0.02, -0.94,  1.10, -0.48, -0.71, -0.50, -1.63, -1.17, -2.18, -1.34, -0.29, -0.47)
+  B = tensor_spline(x,xi_1,xi_2)
+  return(20*B%*%cbind(beta))
+}
+```
+
+```{r}
+thres = 3
+sd = 2
+m = 1000
+x = cbind(c(0, runif(m-2), 1), c(0, runif(m-2), 1))
+y = f_sur(x) - mean(f_sur(x))
+region = abs(y)>thres
+y = y * region
+y_obs = y + rnorm(m, 0, sd)
+
+df = data.frame(x_1=x[,1], x_2=x[,2])
+```
+
+```{r}
+grid = seq(0, 1, by=0.02)
+x_grid = expand.grid(grid, grid)
+y_grid = f_sur(as.matrix(x_grid)) - mean(f_sur(as.matrix(x_grid)))
+region_grid = abs(y_grid)>thres
+contour(x=grid, y=grid, z = outer(grid, grid, function(x,y) f_sur(cbind(x,y))), axes = FALSE, frame.plot =TRUE)
+```
+
+
+```{r}
+# Plot the binary map
+image(x=grid, y=grid, z=matrix(region_grid, nrow=length(grid)), col = c("white", "black"), axes = FALSE, main = "Binary Map")
+```
+
+
+```{r}
+# Plot binary map
+ggplot(df, aes(x_1, x_2)) +
+  geom_tile(aes(fill = factor(region), width=0.01, height=0.01)) +
+  scale_fill_manual(values = c("white", "black")) +
+  theme_minimal() +
+  labs(title = "Binary Map", fill = "Region")
+```
+
+```{r}
+# apply EBARS
+model_bebars = binebars(x, y_obs, gamma=1, n_1=1000, n_2=1000, intercept_1=T, intercept_2=T)
+model_bebars$mcmc(burns=2000, steps=2000)
+
+# fit a spline model
+knots = model_bebars$knots()
+z = tensor_spline(x, xi_1=knots$xi_1, xi_2=knots$xi_2)
+reg_df = as.data.frame(z)
+reg_df$y_obs = y_obs
+lm_model = lm(y_obs ~ ., data=reg_df)
+
+# compute 95% predictive intervals
+pred_int = as.data.frame(predict(lm_model, reg_df, interval="prediction", level=0.8))
+# calculate the activation region
+region_pred = (pred_int$lwr>0) | (pred_int$upr<0)
+```
+
+```{r}
+# Plot binary map
+ggplot(df, aes(x_1, x_2)) +
+  geom_tile(aes(fill = factor(region_pred), width=0.01, height=0.01)) +
+  scale_fill_manual(values = c("white", "black")) +
+  theme_minimal() +
+  labs(title = "Binary Map", fill = "Region")
+```
+
+```{r}
+# Plot binary map
+ggplot(df, aes(x_1, x_2)) +
+  geom_tile(aes(fill = factor(abs(y_obs)>3), width=0.01, height=0.01)) +
+  scale_fill_manual(values = c("white", "black")) +
+  theme_minimal() +
+  labs(title = "Binary Map", fill = "Region")
+```
